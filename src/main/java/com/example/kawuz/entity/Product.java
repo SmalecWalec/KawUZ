@@ -14,6 +14,7 @@ public class Product {
     private String description;
     private boolean productAvailable;
     private int stockQuantity;
+    private double price;
 
     public int getId() {
         return id;
@@ -53,5 +54,13 @@ public class Product {
 
     public void setStockQuantity(int stockQuantity) {
         this.stockQuantity = stockQuantity;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
     }
 }

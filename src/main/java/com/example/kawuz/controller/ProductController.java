@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api")
 public class ProductController {
@@ -35,7 +36,7 @@ public class ProductController {
 
     @PutMapping("/product/{id}")
     public ResponseEntity<String> updateProduct(@PathVariable int id,
-                                                @RequestPart Product product){
+                                                @RequestBody Product product){
 
         Product product1 = null;
         product1 = productService.updateProduct(product, id);
