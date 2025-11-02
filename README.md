@@ -48,10 +48,10 @@ View product details
 
 Update and delete products
 
-Start Frontend
-cd frontend
-npm install
-npm run dev
+## Start Frontend
+* cd frontend\kawuz-react
+* npm install
+* npm run dev
 
 
 Open in browser: http://localhost:5173
