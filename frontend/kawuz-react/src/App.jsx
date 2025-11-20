@@ -7,10 +7,18 @@ function ProductsList({ onSelect }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
+  const [search, setSearch] = useState("");
 
-  useEffect(() => {
+  const fetchProducts = (keyword = "") => {
     setLoading(true);
-    fetch(`${BASE}/products`)
+    setErr(null);
+
+    let url = `${BASE}/products`;
+    if (keyword) {
+      url = `${BASE}/product/search?keyword=${encodeURIComponent(keyword)}`;
+    }
+
+    fetch(url)
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -18,19 +26,36 @@ function ProductsList({ onSelect }) {
       .then(data => setProducts(data))
       .catch(e => setErr(e.message))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchProducts();
   }, []);
 
   if (loading) return <div>Loading products…</div>;
-  if (err) return <div style={{color:'red'}}>Error: {err}</div>;
+  if (err) return <div style={{ color: "red" }}>Error: {err}</div>;
   if (!products.length) return <div>No products returned</div>;
 
   return (
     <div>
       <h2>Products</h2>
+
+      {/* Wyszukiwarka */}
+      <div style={{ marginBottom: 10 }}>
+        <input
+          type="text"
+          placeholder="Szukaj produktów..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ marginRight: 8 }}
+        />
+        <button onClick={() => fetchProducts(search)}>Szukaj</button>
+      </div>
+
       <ul>
         {products.map(p => (
           <li key={p.id}>
-            <button onClick={() => onSelect(p.id)} style={{marginRight:8}}>
+            <button onClick={() => onSelect(p.id)} style={{ marginRight: 8 }}>
               View
             </button>
             {p.name ?? `Product ${p.id}`} — {p.price ?? "?"} zł
@@ -77,7 +102,7 @@ function ProductDetails({ id, onBack, refreshList }) {
 
   if (!id) return null;
   if (loading) return <div>Loading product…</div>;
-  if (message && !product) return <div style={{color:'red'}}>Error: {message}</div>;
+  if (message && !product) return <div style={{ color: "red" }}>Error: {message}</div>;
 
   return (
     <div>
@@ -92,10 +117,13 @@ function ProductDetails({ id, onBack, refreshList }) {
         </div>
       )}
       <hr />
-      <UpdateProductForm product={product} onUpdate={(msg) => { setMessage(msg); refreshList?.(); }} />
+      <UpdateProductForm
+        product={product}
+        onUpdate={(msg) => { setMessage(msg); refreshList?.(); }}
+      />
       <hr />
       <button onClick={deleteProduct}>Delete product</button>
-      <div style={{marginTop:10}}>{message}</div>
+      <div style={{ marginTop: 10 }}>{message}</div>
     </div>
   );
 }
@@ -106,7 +134,6 @@ function UpdateProductForm({ product, onUpdate }) {
   const [desc, setDesc] = useState(product?.description ?? "");
   const [msg, setMsg] = useState("");
 
-  // keep form in sync when product changes
   useEffect(() => {
     setName(product?.name ?? "");
     setPrice(product?.price ?? "");
@@ -137,7 +164,6 @@ function UpdateProductForm({ product, onUpdate }) {
     }
   };
 
-
   return (
     <div>
       <h4>Update product</h4>
@@ -153,12 +179,11 @@ function UpdateProductForm({ product, onUpdate }) {
             <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} cols={40} />
           </label>
         </div>
-        <div style={{marginTop:6}}>
+        <div style={{ marginTop: 6 }}>
           <button type="submit">Update (send JSON)</button>
-        
         </div>
       </form>
-      <div style={{marginTop:8}}>{msg}</div>
+      <div style={{ marginTop: 8 }}>{msg}</div>
     </div>
   );
 }
@@ -169,9 +194,14 @@ export default function App() {
   const forceRefresh = () => setRefreshKey(k => k + 1);
 
   return (
-    <div style={{padding:20,fontFamily:'sans-serif'}}>
+    <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
       <h1>Strona testowa</h1>
-      {!selectedId && <ProductsList key={refreshKey} onSelect={(id) => setSelectedId(id)} />}
+      {!selectedId && (
+        <ProductsList
+          key={refreshKey}
+          onSelect={(id) => setSelectedId(id)}
+        />
+      )}
       {selectedId && (
         <ProductDetails
           id={selectedId}
