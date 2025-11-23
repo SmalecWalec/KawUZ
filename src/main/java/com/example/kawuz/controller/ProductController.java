@@ -65,5 +65,11 @@ public class ProductController {
         List<Product> results = productService.searchProducts(keyword);
         return ResponseEntity.ok(results);
     }
+
+    @PostMapping("/product")
+    public ResponseEntity<Product> createProduct(@RequestBody Product product) {
+        Product savedProduct = productService.addProduct(product);
+        return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
+    }
 }
 

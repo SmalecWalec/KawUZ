@@ -1,5 +1,6 @@
 // src/App.jsx
 import React, { useEffect, useState } from "react";
+import AdminPanel from './AdminPanel';
 
 const BASE = "http://localhost:8080/api";
 
@@ -109,20 +110,24 @@ function ProductDetails({ id, onBack, refreshList }) {
       <button onClick={onBack}>Back to list</button>
       <h3>Product details</h3>
       {product && (
-        <div>
+        <div className="product-card">
           <div><strong>ID:</strong> {product.id}</div>
           <div><strong>Name:</strong> {product.name}</div>
           <div><strong>Price:</strong> {product.price}</div>
           <div><strong>Description:</strong> {product.description}</div>
         </div>
       )}
-      <hr />
-      <UpdateProductForm
-        product={product}
-        onUpdate={(msg) => { setMessage(msg); refreshList?.(); }}
-      />
-      <hr />
-      <button onClick={deleteProduct}>Delete product</button>
+
+    {/*zakomentowane ze wzgledu na admin panel*/}
+
+      {/*<hr />*/}
+      {/*<UpdateProductForm*/}
+      {/*  product={product}*/}
+      {/*  onUpdate={(msg) => { setMessage(msg); refreshList?.(); }}*/}
+      {/*/>*/}
+      {/*<hr />*/}
+      {/*<button onClick={deleteProduct}>Delete product</button>*/}
+
       <div style={{ marginTop: 10 }}>{message}</div>
     </div>
   );
@@ -192,23 +197,50 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const forceRefresh = () => setRefreshKey(k => k + 1);
+  const [mode, setMode] = useState('list');
+  const returnToListMode = () => {
+      setSelectedId(null);
+      setMode('list');
+  };
+  const handleSelectProduct = (id) => {
+      setSelectedId(id);
+      setMode('details');
+  };
 
-  return (
-    <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
-      <h1>Strona testowa</h1>
-      {!selectedId && (
-        <ProductsList
-          key={refreshKey}
-          onSelect={(id) => setSelectedId(id)}
-        />
-      )}
-      {selectedId && (
-        <ProductDetails
-          id={selectedId}
-          onBack={() => setSelectedId(null)}
-          refreshList={forceRefresh}
-        />
-      )}
-    </div>
-  );
+    if (mode === 'admin') {
+        return (
+            <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
+                <h1>Panel Administracyjny</h1>
+                <button onClick={returnToListMode}>Powrót do strony głównej</button>
+                <AdminPanel forceRefresh={forceRefresh} onEdit={(id) => {
+                    setSelectedId(id);
+                    setMode('details');
+                }} />
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
+            <h1>Strona testowa</h1>
+
+            <button onClick={() => setMode('admin')} className="admin-button">
+                Przejdź do Panelu Admina
+            </button>
+
+            {!selectedId && mode === 'list' && (
+                <ProductsList
+                    key={refreshKey}
+                    onSelect={handleSelectProduct}
+                />
+            )}
+            {selectedId && mode === 'details' && (
+                <ProductDetails
+                    id={selectedId}
+                    onBack={() => { setSelectedId(null); setMode('list'); }}
+                    refreshList={forceRefresh}
+                />
+            )}
+        </div>
+    );
 }
