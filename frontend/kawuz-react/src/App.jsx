@@ -67,7 +67,7 @@ function ProductsList({ onSelect }) {
   );
 }
 
-function ProductDetails({ id, onBack, refreshList }) {
+function ProductDetails({ id, onBack, refreshList, isEditable = false }) {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -117,18 +117,18 @@ function ProductDetails({ id, onBack, refreshList }) {
           <div><strong>Description:</strong> {product.description}</div>
         </div>
       )}
-
-    {/*zakomentowane ze wzgledu na admin panel*/}
-
-      {/*<hr />*/}
-      {/*<UpdateProductForm*/}
-      {/*  product={product}*/}
-      {/*  onUpdate={(msg) => { setMessage(msg); refreshList?.(); }}*/}
-      {/*/>*/}
-      {/*<hr />*/}
-      {/*<button onClick={deleteProduct}>Delete product</button>*/}
-
-      <div style={{ marginTop: 10 }}>{message}</div>
+        {isEditable && (
+            <>
+                <hr />
+                <UpdateProductForm
+                    product={product}
+                    onUpdate={(msg) => { setMessage(msg); refreshList?.(); }}
+                />
+                <hr />
+                <button onClick={deleteProduct} className="delete-btn">Delete product</button>
+            </>
+        )}
+        <div style={{ marginTop: 10 }}>{message}</div>
     </div>
   );
 }
@@ -194,28 +194,40 @@ function UpdateProductForm({ product, onUpdate }) {
 }
 
 export default function App() {
-  const [selectedId, setSelectedId] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const forceRefresh = () => setRefreshKey(k => k + 1);
-  const [mode, setMode] = useState('list');
-  const returnToListMode = () => {
-      setSelectedId(null);
-      setMode('list');
-  };
-  const handleSelectProduct = (id) => {
-      setSelectedId(id);
-      setMode('details');
-  };
+    const [selectedId, setSelectedId] = useState(null);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const forceRefresh = () => setRefreshKey(k => k + 1);
+    const [mode, setMode] = useState('list');
+
+    const [isEditing, setIsEditing] = useState(false);
+
+    const returnToListMode = () => {
+        setSelectedId(null);
+        setMode('list');
+        setIsEditing(false);
+    };
+
+    const handleViewProduct = (id) => {
+        setSelectedId(id);
+        setMode('details');
+        setIsEditing(false);
+    };
+
+    const handleEditProduct = (id) => {
+        setSelectedId(id);
+        setMode('details');
+        setIsEditing(true);
+    };
 
     if (mode === 'admin') {
         return (
             <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
                 <h1>Panel Administracyjny</h1>
                 <button onClick={returnToListMode}>Powrót do strony głównej</button>
-                <AdminPanel forceRefresh={forceRefresh} onEdit={(id) => {
-                    setSelectedId(id);
-                    setMode('details');
-                }} />
+                <AdminPanel
+                    forceRefresh={forceRefresh}
+                    onEdit={handleEditProduct}
+                />
             </div>
         );
     }
@@ -231,14 +243,15 @@ export default function App() {
             {!selectedId && mode === 'list' && (
                 <ProductsList
                     key={refreshKey}
-                    onSelect={handleSelectProduct}
+                    onSelect={handleViewProduct}
                 />
             )}
             {selectedId && mode === 'details' && (
                 <ProductDetails
                     id={selectedId}
-                    onBack={() => { setSelectedId(null); setMode('list'); }}
+                    onBack={returnToListMode}
                     refreshList={forceRefresh}
+                    isEditable={isEditing}
                 />
             )}
         </div>

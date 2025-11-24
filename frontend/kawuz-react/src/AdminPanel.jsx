@@ -1,10 +1,11 @@
+// src/AdminPanel.jsx
+
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import ProductForm from './ProductForm';
 
 const BASE = "http://localhost:8080/api";
 
-function AdminPanel({ forceRefresh, onEdit }) {
+function AdminPanel({ forceRefresh, onEdit}) {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState(null);
