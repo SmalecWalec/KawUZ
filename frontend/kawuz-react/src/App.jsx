@@ -1,5 +1,7 @@
 // src/App.jsx
 import React, { useEffect, useState } from "react";
+import Login from "./Login";
+import Register from "./Register";
 
 const BASE = "http://localhost:8080/api";
 
@@ -38,8 +40,7 @@ function ProductsList({ onSelect }) {
 
   return (
     <div>
-      <h2>Products</h2>
-
+      <h2 style={{color: 'white'}}>Lista Ofert (Kawa)</h2>
       {/* Wyszukiwarka */}
       <div style={{ marginBottom: 10 }}>
         <input
@@ -47,18 +48,18 @@ function ProductsList({ onSelect }) {
           placeholder="Szukaj produktów..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ marginRight: 8 }}
+          style={{ marginRight: 8, padding: 5 }}
         />
         <button onClick={() => fetchProducts(search)}>Szukaj</button>
       </div>
 
-      <ul>
+      <ul style={{textAlign: 'left'}}>
         {products.map(p => (
-          <li key={p.id}>
+          <li key={p.id} style={{marginBottom: 5}}>
             <button onClick={() => onSelect(p.id)} style={{ marginRight: 8 }}>
-              View
+              Podgląd
             </button>
-            {p.name ?? `Product ${p.id}`} — {p.price ?? "?"} zł
+            {p.name ?? `Product ${p.id}`} — <b>{p.price ?? "?"} zł</b>
           </li>
         ))}
       </ul>
@@ -93,6 +94,7 @@ function ProductDetails({ id, onBack, refreshList }) {
         if (r.ok) {
           setMessage("Deleted");
           refreshList?.();
+          setTimeout(onBack, 1000); // Wróć do listy po usunięciu
         } else {
           setMessage(`Failed: ${r.text || r.status}`);
         }
@@ -105,15 +107,15 @@ function ProductDetails({ id, onBack, refreshList }) {
   if (message && !product) return <div style={{ color: "red" }}>Error: {message}</div>;
 
   return (
-    <div>
-      <button onClick={onBack}>Back to list</button>
-      <h3>Product details</h3>
+    <div style={{border: '1px solid #555', padding: 20, borderRadius: 8}}>
+      <button onClick={onBack}>← Wróć do listy</button>
+      <h3>Szczegóły produktu</h3>
       {product && (
-        <div>
+        <div style={{textAlign: 'left'}}>
           <div><strong>ID:</strong> {product.id}</div>
-          <div><strong>Name:</strong> {product.name}</div>
-          <div><strong>Price:</strong> {product.price}</div>
-          <div><strong>Description:</strong> {product.description}</div>
+          <div><strong>Nazwa:</strong> {product.name}</div>
+          <div><strong>Cena:</strong> {product.price} zł</div>
+          <div><strong>Opis:</strong> {product.description}</div>
         </div>
       )}
       <hr />
@@ -122,7 +124,7 @@ function ProductDetails({ id, onBack, refreshList }) {
         onUpdate={(msg) => { setMessage(msg); refreshList?.(); }}
       />
       <hr />
-      <button onClick={deleteProduct}>Delete product</button>
+      <button onClick={deleteProduct} style={{backgroundColor: '#b33'}}>Usuń produkt</button>
       <div style={{ marginTop: 10 }}>{message}</div>
     </div>
   );
@@ -154,10 +156,10 @@ function UpdateProductForm({ product, onUpdate }) {
       });
       const text = await res.text();
       if (res.ok) {
-        setMsg("Updated (JSON). Server: " + text);
+        setMsg("Zaktualizowano!");
         onUpdate?.(text);
       } else {
-        setMsg("Failed to update (JSON): " + text);
+        setMsg("Błąd aktualizacji: " + text);
       }
     } catch (err) {
       setMsg(err.message);
@@ -166,22 +168,14 @@ function UpdateProductForm({ product, onUpdate }) {
 
   return (
     <div>
-      <h4>Update product</h4>
-      <form onSubmit={submitAsJson}>
-        <div>
-          <label>Name: <input value={name} onChange={e => setName(e.target.value)} /></label>
-        </div>
-        <div>
-          <label>Price: <input value={price} onChange={e => setPrice(e.target.value)} /></label>
-        </div>
-        <div>
-          <label>Description:<br />
-            <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} cols={40} />
-          </label>
-        </div>
-        <div style={{ marginTop: 6 }}>
-          <button type="submit">Update (send JSON)</button>
-        </div>
+      <h4>Edytuj produkt</h4>
+      <form onSubmit={submitAsJson} style={{display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 300, margin: 'auto'}}>
+        <label>Nazwa: <input value={name} onChange={e => setName(e.target.value)} /></label>
+        <label>Cena: <input value={price} onChange={e => setPrice(e.target.value)} /></label>
+        <label>Opis:<br />
+            <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} cols={30} />
+        </label>
+        <button type="submit">Zapisz zmiany</button>
       </form>
       <div style={{ marginTop: 8 }}>{msg}</div>
     </div>
@@ -189,13 +183,43 @@ function UpdateProductForm({ product, onUpdate }) {
 }
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [authView, setAuthView] = useState('login');
+
   const [selectedId, setSelectedId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
   const forceRefresh = () => setRefreshKey(k => k + 1);
+  const handleLogout = () => { setUser(null); setAuthView('login'); };
+
+  if (!user) {
+    return (
+      <div style={{ textAlign: 'center', marginTop: 50 }}>
+        <h1>☕ KawUZ System</h1>
+        {authView === 'login' ? (
+          <Login
+             onSwitchToRegister={() => setAuthView('register')}
+             onLoginSuccess={(username) => setUser(username)}
+          />
+        ) : (
+          <Register
+             onSwitchToLogin={() => setAuthView('login')}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
-      <h1>Strona testowa</h1>
+    <div style={{ padding: 20, fontFamily: 'sans-serif', textAlign: 'center' }}>
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #444', paddingBottom: 10, marginBottom: 20}}>
+        <h1>☕ Panel KawUZ</h1>
+        <div>
+            <span>Witaj, <b>{user}</b>! </span>
+            <button onClick={handleLogout} style={{marginLeft: 10, padding: '5px 10px'}}>Wyloguj</button>
+        </div>
+      </div>
+
       {!selectedId && (
         <ProductsList
           key={refreshKey}
