@@ -2,10 +2,11 @@
 import React, { useEffect, useState } from "react";
 import Login from "./Login";
 import Register from "./Register";
+import Cart from "./Cart";
 
 const BASE = "http://localhost:8080/api";
 
-function ProductsList({ onSelect }) {
+function ProductsList({ onSelect, onAddToCart }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
@@ -14,12 +15,10 @@ function ProductsList({ onSelect }) {
   const fetchProducts = (keyword = "") => {
     setLoading(true);
     setErr(null);
-
     let url = `${BASE}/products`;
     if (keyword) {
       url = `${BASE}/product/search?keyword=${encodeURIComponent(keyword)}`;
     }
-
     fetch(url)
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -52,14 +51,18 @@ function ProductsList({ onSelect }) {
         />
         <button onClick={() => fetchProducts(search)}>Szukaj</button>
       </div>
-
-      <ul style={{textAlign: 'left'}}>
+      <ul style={{ textAlign: "left" }}>
         {products.map(p => (
-          <li key={p.id} style={{marginBottom: 5}}>
+          <li key={p.id} style={{ marginBottom: 5 }}>
             <button onClick={() => onSelect(p.id)} style={{ marginRight: 8 }}>
               Podgląd
             </button>
             {p.name ?? `Product ${p.id}`} — <b>{p.price ?? "?"} zł</b>
+            <button
+              onClick={() => onAddToCart(p)}
+              style={{ marginLeft: 10, padding: "2px 5px", backgroundColor: "#4a4", color: "white" }}>
+              Dodaj do koszyka
+            </button>
           </li>
         ))}
       </ul>
@@ -67,7 +70,7 @@ function ProductsList({ onSelect }) {
   );
 }
 
-function ProductDetails({ id, onBack, refreshList }) {
+function ProductDetails({ id, onBack, refreshList, onAddToCart }) {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -94,7 +97,7 @@ function ProductDetails({ id, onBack, refreshList }) {
         if (r.ok) {
           setMessage("Deleted");
           refreshList?.();
-          setTimeout(onBack, 1000); // Wróć do listy po usunięciu
+          setTimeout(onBack, 1000);
         } else {
           setMessage(`Failed: ${r.text || r.status}`);
         }
@@ -107,103 +110,80 @@ function ProductDetails({ id, onBack, refreshList }) {
   if (message && !product) return <div style={{ color: "red" }}>Error: {message}</div>;
 
   return (
-    <div style={{border: '1px solid #555', padding: 20, borderRadius: 8}}>
+    <div style={{ border: "1px solid #555", padding: 20, borderRadius: 8 }}>
       <button onClick={onBack}>← Wróć do listy</button>
       <h3>Szczegóły produktu</h3>
       {product && (
-        <div style={{textAlign: 'left'}}>
+        <div style={{ textAlign: "left" }}>
           <div><strong>ID:</strong> {product.id}</div>
           <div><strong>Nazwa:</strong> {product.name}</div>
           <div><strong>Cena:</strong> {product.price} zł</div>
           <div><strong>Opis:</strong> {product.description}</div>
+          <button
+            onClick={() => onAddToCart(product)} style={{ marginTop: 10, padding: "5px 10px", backgroundColor: "#4a4", color: "white" }}>
+            Dodaj do koszyka
+          </button>
         </div>
       )}
       <hr />
-      <UpdateProductForm
-        product={product}
-        onUpdate={(msg) => { setMessage(msg); refreshList?.(); }}
-      />
-      <hr />
-      <button onClick={deleteProduct} style={{backgroundColor: '#b33'}}>Usuń produkt</button>
+      <button onClick={deleteProduct} style={{ backgroundColor: "#b33", color: "white" }}>
+        Usuń produkt
+      </button>
       <div style={{ marginTop: 10 }}>{message}</div>
-    </div>
-  );
-}
-
-function UpdateProductForm({ product, onUpdate }) {
-  const [name, setName] = useState(product?.name ?? "");
-  const [price, setPrice] = useState(product?.price ?? "");
-  const [desc, setDesc] = useState(product?.description ?? "");
-  const [msg, setMsg] = useState("");
-
-  useEffect(() => {
-    setName(product?.name ?? "");
-    setPrice(product?.price ?? "");
-    setDesc(product?.description ?? "");
-    setMsg("");
-  }, [product]);
-
-  const submitAsJson = async (e) => {
-    e.preventDefault();
-    if (!product) return setMsg("No product loaded");
-    const payload = { id: product.id, name, price, description: desc };
-
-    try {
-      const res = await fetch(`${BASE}/product/${product.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const text = await res.text();
-      if (res.ok) {
-        setMsg("Zaktualizowano!");
-        onUpdate?.(text);
-      } else {
-        setMsg("Błąd aktualizacji: " + text);
-      }
-    } catch (err) {
-      setMsg(err.message);
-    }
-  };
-
-  return (
-    <div>
-      <h4>Edytuj produkt</h4>
-      <form onSubmit={submitAsJson} style={{display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 300, margin: 'auto'}}>
-        <label>Nazwa: <input value={name} onChange={e => setName(e.target.value)} /></label>
-        <label>Cena: <input value={price} onChange={e => setPrice(e.target.value)} /></label>
-        <label>Opis:<br />
-            <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} cols={30} />
-        </label>
-        <button type="submit">Zapisz zmiany</button>
-      </form>
-      <div style={{ marginTop: 8 }}>{msg}</div>
     </div>
   );
 }
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [authView, setAuthView] = useState('login');
-
+  const [authView, setAuthView] = useState("login");
   const [selectedId, setSelectedId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [cart, setCart] = useState([]);
+  const [activeTab, setActiveTab] = useState("products"); // 'products' lub 'cart'
 
   const forceRefresh = () => setRefreshKey(k => k + 1);
-  const handleLogout = () => { setUser(null); setAuthView('login'); };
+  const handleLogout = () => { setUser(null); setAuthView("login"); };
+
+  const addToCart = (product) => setCart(prev => [...prev, product]);
+  const removeFromCart = (index) => setCart(prev => prev.filter((_, i) => i !== index));
+
+  const handleCheckout = async () => {
+    if(cart.length === 0) return alert("Koszyk jest pusty");
+    const orderItems = cart.map(item => ({ productId: item.id, quantity: 1 }));
+
+    try {
+      const res = await fetch(`${BASE}/order/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderItems),
+      });
+
+      if(res.ok) {
+        alert("Zamówienie złożone!");
+        setCart([]);
+        forceRefresh();
+      } else {
+        const text = await res.text();
+        alert("Błąd: " + text);
+      }
+    } catch(err) {
+      alert("Błąd: " + err.message);
+    }
+  };
 
   if (!user) {
     return (
-      <div style={{ textAlign: 'center', marginTop: 50 }}>
+      <div style={{ textAlign: "center", marginTop: 50 }}>
         <h1>☕ KawUZ System</h1>
-        {authView === 'login' ? (
+        {authView === "login" ? (
           <Login
-             onSwitchToRegister={() => setAuthView('register')}
-             onLoginSuccess={(username) => setUser(username)}
+            onSwitchToRegister={() => setAuthView("register")}
+            onLoginSuccess={(username) => setUser(username)}
           />
         ) : (
           <Register
-             onSwitchToLogin={() => setAuthView('login')}
+            onSwitchToLogin={() => setAuthView("login")}
           />
         )}
       </div>
@@ -211,27 +191,36 @@ export default function App() {
   }
 
   return (
-    <div style={{ padding: 20, fontFamily: 'sans-serif', textAlign: 'center' }}>
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #444', paddingBottom: 10, marginBottom: 20}}>
+    <div style={{ padding: 20, fontFamily: "sans-serif", textAlign: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #444", paddingBottom: 10, marginBottom: 20 }}>
         <h1>☕ Panel KawUZ</h1>
         <div>
-            <span>Witaj, <b>{user}</b>! </span>
-            <button onClick={handleLogout} style={{marginLeft: 10, padding: '5px 10px'}}>Wyloguj</button>
+          <span>Witaj, <b>{user}</b>! </span>
+          <button onClick={handleLogout} style={{ marginLeft: 10, padding: "5px 10px" }}>Wyloguj</button>
         </div>
       </div>
 
-      {!selectedId && (
-        <ProductsList
-          key={refreshKey}
-          onSelect={(id) => setSelectedId(id)}
-        />
+      {/* Zakładki */}
+      <div style={{ marginBottom: 20 }}>
+        <button onClick={() => setActiveTab("products")} style={{ marginRight: 10 }}>Produkty</button>
+        <button onClick={() => setActiveTab("cart")}>Koszyk ({cart.length})</button>
+      </div>
+
+      {activeTab === "products" && !selectedId && (
+        <ProductsList key={refreshKey} onSelect={id => setSelectedId(id)} onAddToCart={addToCart} />
       )}
-      {selectedId && (
+
+      {activeTab === "products" && selectedId && (
         <ProductDetails
           id={selectedId}
           onBack={() => setSelectedId(null)}
           refreshList={forceRefresh}
+          onAddToCart={addToCart}
         />
+      )}
+
+      {activeTab === "cart" && (
+        <Cart cart={cart} onRemove={removeFromCart} onCheckout={handleCheckout} />
       )}
     </div>
   );
