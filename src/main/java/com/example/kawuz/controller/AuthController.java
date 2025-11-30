@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @RestController
@@ -31,9 +32,11 @@ public class AuthController {
         Optional<User> existingUser = userRepository.findByUsername(user.getUsername());
 
         if (existingUser.isPresent() && existingUser.get().getPassword().equals(user.getPassword())) {
-            Map<String, String> response = new HashMap<>();
+            User loggedInUser = existingUser.get();
+            Map<String, Object> response = new HashMap<>();
             response.put("message", "Zalogowano!");
-            response.put("username", existingUser.get().getUsername());
+            response.put("username", loggedInUser.getUsername());
+            response.put("isAdmin", loggedInUser.isAdmin());
             return ResponseEntity.ok(response);
         }
         return ResponseEntity.status(401).body(Map.of("message", "Błąd: Zły login lub hasło"));

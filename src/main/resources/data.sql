@@ -3,3 +3,6 @@ INSERT INTO product (name, description, product_available, stock_quantity, price
 ('Colombian Supremo', 'Średnio palona kawa o zrównoważonym, czekoladowym smaku', TRUE, 40, 16.49),
 ('Sumatra Mandheling', 'Ciemno palone ziarna o ziemistym i pełnym smaku', TRUE, 30, 19.99),
 ('Kenya AA', 'Jasna i owocowa kawa o średnim stopniu palenia', TRUE, 25, 21.50);
+
+INSERT INTO users (username, password, email, is_admin) VALUES ('admin', 'admin', 'admin@kawuz.pl', 1);
+INSERT INTO users (username, password, email, is_admin) VALUES ('user', 'user', 'user@kawuz.pl', 0);

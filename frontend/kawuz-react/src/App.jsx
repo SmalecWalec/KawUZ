@@ -69,7 +69,7 @@ function ProductsList({ onSelect }) {
     );
 }
 
-function ProductDetails({ id, onBack, refreshList, isEditable = false }) { // isEditable jest konieczne dla Admina
+function ProductDetails({ id, onBack, refreshList, isEditable = false }) {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
@@ -194,15 +194,19 @@ function UpdateProductForm({ product, onUpdate }) {
 export default function App() {
     const [user, setUser] = useState(null);
     const [authView, setAuthView] = useState('login');
-    const handleLogout = () => { setUser(null); setAuthView('login'); };
 
+    // Stany dla widoków
     const [selectedId, setSelectedId] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0);
     const forceRefresh = () => setRefreshKey(k => k + 1);
-    const [mode, setMode] = useState('list'); // 'list', 'details', 'admin'
+    const [mode, setMode] = useState('list');
+    const [isEditing, setIsEditing] = useState(false);
 
-    const [isEditing, setIsEditing] = useState(false); // Stan potrzebny do przełączania trybu edycji/podglądu
-
+    const handleLogout = () => {
+        setUser(null);
+        setAuthView('login');
+        setMode('list');
+    };
     const returnToListMode = () => {
         setSelectedId(null);
         setMode('list');
@@ -229,7 +233,7 @@ export default function App() {
                 {authView === 'login' ? (
                     <Login
                         onSwitchToRegister={() => setAuthView('register')}
-                        onLoginSuccess={(username) => setUser(username)}
+                        onLoginSuccess={(userData) => setUser(userData)}
                     />
                 ) : (
                     <Register
@@ -242,15 +246,15 @@ export default function App() {
 
     // 2. WIDOK PO ZALOGOWANIU
 
-    // Obsługa trybu Admina (Twój blok)
-    if (mode === 'admin') {
+    // Obsługa trybu Admina
+    if (mode === 'admin' && user.isAdmin) {
         return (
             <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
                 <h1>Panel Administracyjny</h1>
                 <button onClick={returnToListMode}>Powrót do strony głównej</button>
                 <AdminPanel
                     forceRefresh={forceRefresh}
-                    onEdit={handleEditProduct} // onEdit musi tu być, aby działał przycisk 'Edytuj' z AdminPanel.jsx
+                    onEdit={handleEditProduct}
                 />
             </div>
         );
@@ -259,30 +263,49 @@ export default function App() {
     // Główny widok listy/szczegółów
     return (
         <div style={{ padding: 20, fontFamily: 'sans-serif', textAlign: 'center' }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #444', paddingBottom: 10, marginBottom: 20}}>
+
+            {/* Nagłówek i Wylogowanie */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '1px solid #444',
+                paddingBottom: 10,
+                marginBottom: 20
+            }}>
                 <h1>☕ Panel KawUZ</h1>
-                <div>
-                    <span>Witaj, <b>{user}</b>! </span>
-                    <button onClick={handleLogout} style={{marginLeft: 10, padding: '5px 10px'}}>Wyloguj</button>
+
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <div style={{ marginBottom: user.isAdmin ? 5 : 0 }}>
+                        <span>Witaj, <b>{user.username}</b>! </span>
+                        <button onClick={handleLogout} style={{marginLeft: 10, padding: '5px 10px'}}>Wyloguj</button>
+                    </div>
+
+                    {user.isAdmin && (
+                        <button
+                            onClick={() => setMode('admin')}
+                            className="admin-button"
+                            style={{ padding: '5px 10px' }}
+                        >
+                            Przejdź do Panelu Admina
+                        </button>
+                    )}
                 </div>
             </div>
-            <button onClick={() => setMode('admin')} className="admin-button" style={{marginBottom: 20}}>
-                Przejdź do Panelu Admina
-            </button>
-
 
             {!selectedId && mode === 'list' && (
                 <ProductsList
                     key={refreshKey}
-                    onSelect={handleViewProduct} // Używamy handleViewProduct, aby ustawić mode='details' i isEditing=false
+                    onSelect={handleViewProduct}
                 />
             )}
+
             {selectedId && mode === 'details' && (
                 <ProductDetails
                     id={selectedId}
-                    onBack={returnToListMode} // Używamy returnToListMode, aby zresetować stany mode/isEditing
+                    onBack={returnToListMode}
                     refreshList={forceRefresh}
-                    isEditable={isEditing}
+                    isEditable={isEditing && user.isAdmin}
                 />
             )}
         </div>
