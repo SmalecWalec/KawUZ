@@ -4,10 +4,13 @@ import React, { useEffect, useState } from "react";
 import AdminPanel from './AdminPanel';
 import Login from "./Login";
 import Register from "./Register";
+import Cart from "./Cart";
 
 const BASE = "http://localhost:8080/api";
 
-function ProductsList({ onSelect }) {
+// --- ProductsList ---
+
+function ProductsList({ onSelect, onAddToCart }) {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState(null);
@@ -43,7 +46,6 @@ function ProductsList({ onSelect }) {
     return (
         <div>
             <h2>Lista Ofert (Kawa)</h2>
-            {/* Wyszukiwarka */}
             <div style={{ marginBottom: 10 }}>
                 <input
                     type="text"
@@ -57,11 +59,16 @@ function ProductsList({ onSelect }) {
 
             <ul style={{textAlign: 'left'}}>
                 {products.map(p => (
-                    <li key={p.id} style={{marginBottom: 5}}>
+                    <li key={p.id} style={{marginBottom: 5, display: 'flex', alignItems: 'center'}}>
                         <button onClick={() => onSelect(p.id)} style={{ marginRight: 8 }}>
                             Podgląd
                         </button>
                         {p.name ?? `Product ${p.id}`} — <b>{p.price ?? "?"} zł</b>
+                        <button
+                            onClick={() => onAddToCart(p)}
+                            style={{ marginLeft: 10, padding: "2px 5px", backgroundColor: "#4a4", color: "white" }}>
+                            Dodaj do koszyka
+                        </button>
                     </li>
                 ))}
             </ul>
@@ -69,7 +76,9 @@ function ProductsList({ onSelect }) {
     );
 }
 
-function ProductDetails({ id, onBack, refreshList, isEditable = false }) {
+// --- ProductDetails ---
+
+function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCart }) {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
@@ -108,8 +117,10 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false }) {
     if (loading) return <div>Loading product…</div>;
     if (message && !product) return <div style={{ color: "red" }}>Error: {message}</div>;
 
+    const baseStyle = { border: '1px solid #555', padding: 20, borderRadius: 8 };
+
     return (
-        <div style={isEditable ? {border: '1px solid #555', padding: 20, borderRadius: 8} : {}}>
+        <div style={isEditable ? baseStyle : baseStyle}>
             <button onClick={onBack}>← Wróć do listy</button>
             <h3>Szczegóły produktu</h3>
             {product && (
@@ -118,6 +129,13 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false }) {
                     <div><strong>Name:</strong> {product.name}</div>
                     <div><strong>Price:</strong> {product.price}</div>
                     <div><strong>Description:</strong> {product.description}</div>
+                    {!isEditable && (
+                        <button
+                            onClick={() => onAddToCart(product)}
+                            style={{ marginTop: 10, padding: "5px 10px", backgroundColor: "#4a4", color: "white" }}>
+                            Dodaj do koszyka
+                        </button>
+                    )}
                 </div>
             )}
             {isEditable && (
@@ -135,6 +153,8 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false }) {
         </div>
     );
 }
+
+// --- UpdateProductForm ---
 
 function UpdateProductForm({ product, onUpdate }) {
     const [name, setName] = useState(product?.name ?? "");
@@ -202,27 +222,71 @@ export default function App() {
     const [mode, setMode] = useState('list');
     const [isEditing, setIsEditing] = useState(false);
 
+    // Stany dla koszyka
+    const [cart, setCart] = useState([]);
+    const [activeTab, setActiveTab] = useState("products");
+
+    // Funkcje koszyka
+    const addToCart = (product) => {
+        setCart(prev => [...prev, product]);
+        setActiveTab("products");
+    };
+    const removeFromCart = (index) => {
+        setCart(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleCheckout = async () => {
+        if(cart.length === 0) return alert("Koszyk jest pusty");
+        const orderItems = cart.map(item => ({ productId: item.id, quantity: 1 }));
+
+        try {
+            const res = await fetch(`${BASE}/order/create`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(orderItems),
+            });
+
+            if(res.ok) {
+                alert("Zamówienie złożone!");
+                setCart([]);
+                forceRefresh();
+                setActiveTab("products");
+            } else {
+                const text = await res.text();
+                alert("Błąd: " + text);
+            }
+        } catch(err) {
+            alert("Błąd: " + err.message);
+        }
+    };
+
+
     const handleLogout = () => {
         setUser(null);
         setAuthView('login');
         setMode('list');
+        setActiveTab('products');
+        setCart([]);
     };
     const returnToListMode = () => {
         setSelectedId(null);
         setMode('list');
         setIsEditing(false);
+        setActiveTab('products');
     };
 
     const handleViewProduct = (id) => {
         setSelectedId(id);
         setMode('details');
         setIsEditing(false);
+        setActiveTab('products');
     };
 
     const handleEditProduct = (id) => {
         setSelectedId(id);
         setMode('details');
         setIsEditing(true);
+        setActiveTab('products');
     };
 
     // 1. WIDOK BEZ AUTORYZACJI (LOGOWANIE / REJESTRACJA)
@@ -260,7 +324,7 @@ export default function App() {
         );
     }
 
-    // Główny widok listy/szczegółów
+    // Główny widok listy/szczegółów/koszyka (dla zalogowanych)
     return (
         <div style={{ padding: 20, fontFamily: 'sans-serif', textAlign: 'center' }}>
 
@@ -273,7 +337,7 @@ export default function App() {
                 paddingBottom: 10,
                 marginBottom: 20
             }}>
-                <h1>☕ Panel KawUZ</h1>
+                <h1>☕ KawUZ</h1>
 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                     <div style={{ marginBottom: user.isAdmin ? 5 : 0 }}>
@@ -283,7 +347,7 @@ export default function App() {
 
                     {user.isAdmin && (
                         <button
-                            onClick={() => setMode('admin')}
+                            onClick={() => {setMode('admin'); setActiveTab('products'); setSelectedId(null);}}
                             className="admin-button"
                             style={{ padding: '5px 10px' }}
                         >
@@ -293,19 +357,47 @@ export default function App() {
                 </div>
             </div>
 
-            {!selectedId && mode === 'list' && (
+            {/* Zakładki dla Użytkownika (Produkty / Koszyk) */}
+            <div style={{ marginBottom: 20 }}>
+                <button
+                    onClick={() => { setActiveTab("products"); setSelectedId(null); setMode('list'); setIsEditing(false); }}
+                    style={{ marginRight: 10, fontWeight: activeTab === "products" ? 'bold' : 'normal' }}
+                >
+                    Produkty
+                </button>
+                <button
+                    onClick={() => { setActiveTab("cart"); setSelectedId(null); setMode('list'); setIsEditing(false); }}
+                    style={{ fontWeight: activeTab === "cart" ? 'bold' : 'normal' }}
+                >
+                    Koszyk ({cart.length})
+                </button>
+            </div>
+
+            {/* WIDOK PRODUKTÓW */}
+            {activeTab === "products" && !selectedId && mode === 'list' && (
                 <ProductsList
                     key={refreshKey}
                     onSelect={handleViewProduct}
+                    onAddToCart={addToCart}
                 />
             )}
 
-            {selectedId && mode === 'details' && (
+            {activeTab === "products" && selectedId && mode === 'details' && (
                 <ProductDetails
                     id={selectedId}
                     onBack={returnToListMode}
                     refreshList={forceRefresh}
                     isEditable={isEditing && user.isAdmin}
+                    onAddToCart={addToCart}
+                />
+            )}
+
+            {/* WIDOK KOSZYKA */}
+            {activeTab === "cart" && (
+                <Cart
+                    cart={cart}
+                    onRemove={removeFromCart}
+                    onCheckout={handleCheckout}
                 />
             )}
         </div>
