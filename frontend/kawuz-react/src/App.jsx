@@ -138,6 +138,21 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
                     )}
                 </div>
             )}
+            {product && product.latitude && product.longitude && (
+                <div style={{ marginBottom: 20, textAlign: 'center' }}>
+                    <h4>Lokalizacja na mapie</h4>
+                    <iframe
+                        src={`https://maps.google.com/maps?q=${product.latitude},${product.longitude}&z=15&output=embed`}
+                        width="25%"
+                        height="300"
+                        style={{ border: 0 }}
+                        allowFullScreen=""
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title={`Lokalizacja ${product.name}`}
+                    ></iframe>
+                </div>
+            )}
             {isEditable && (
                 <>
                     <hr />
