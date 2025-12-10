@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
-import AdminPanel from './AdminPanel'; // Ensure this component also uses credentials: 'include' internally if it fetches data
+// Ensure these components exist in your project, or remove/comment them if not
+import AdminPanel from './AdminPanel';
 import Register from "./Register";
 import Cart from "./Cart";
 
 const BASE = "http://localhost:8080/api";
 
-// --- Login Component (Updated) ---
-function Login({ onSwitchToRegister, onLoginSuccess }) {
+// --- Login Component ---
+function Login({ onSwitchToRegister, onLoginSuccess, onCancel }) {
     const [formData, setFormData] = useState({ username: '', password: '' });
     const [msg, setMsg] = useState('');
 
@@ -15,7 +16,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
             const res = await fetch(`${BASE}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', // <--- CRITICAL: Allows browser to save the cookie
+                credentials: 'include',
                 body: JSON.stringify(formData)
             });
             const data = await res.json();
@@ -25,7 +26,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                 setTimeout(() => onLoginSuccess({
                     username: data.username,
                     isAdmin: data.isAdmin
-                }), 1000);
+                }), 500);
             } else {
                 setMsg("⚠️ " + data.message);
             }
@@ -47,14 +48,17 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
             <h3>Logowanie</h3>
             <input placeholder="Login" onChange={e => setFormData({...formData, username: e.target.value})} style={{ marginBottom: 10, padding: 5, width: '90%' }}/><br/>
             <input type="password" placeholder="Hasło" onChange={e => setFormData({...formData, password: e.target.value})} style={{ marginBottom: 10, padding: 5, width: '90%' }}/><br/>
-            <button type="submit">Zaloguj się</button>
+
+            <button type="submit" style={{marginRight: 10}}>Zaloguj się</button>
+            <button type="button" onClick={onCancel} style={{background: '#777'}}>Anuluj</button>
+
             <p>{msg}</p>
             <button onClick={onSwitchToRegister} type="button" style={{ background: 'none', border: 'none', color: '#88f', cursor: 'pointer', marginTop: 10 }}>Nie mam konta</button>
         </form>
     );
 }
 
-// --- ProductsList (Updated) ---
+// --- ProductsList Component ---
 function ProductsList({ onSelect, onAddToCart }) {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -64,13 +68,10 @@ function ProductsList({ onSelect, onAddToCart }) {
     const fetchProducts = (keyword = "") => {
         setLoading(true);
         setErr(null);
-
         let url = `${BASE}/products`;
-        if (keyword) {
-            url = `${BASE}/product/search?keyword=${encodeURIComponent(keyword)}`;
-        }
+        if (keyword) url = `${BASE}/product/search?keyword=${encodeURIComponent(keyword)}`;
 
-        fetch(url, { credentials: 'include' }) // Added credentials
+        fetch(url, { credentials: 'include' })
             .then(res => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 return res.json();
@@ -80,38 +81,24 @@ function ProductsList({ onSelect, onAddToCart }) {
             .finally(() => setLoading(false));
     };
 
-    useEffect(() => {
-        fetchProducts();
-    }, []);
+    useEffect(() => { fetchProducts(); }, []);
 
     if (loading) return <div>Loading products…</div>;
     if (err) return <div style={{ color: "red" }}>Error: {err}</div>;
-    if (!products.length) return <div>No products returned</div>;
 
     return (
         <div>
             <h2>Lista Ofert (Kawa)</h2>
             <div style={{ marginBottom: 10 }}>
-                <input
-                    type="text"
-                    placeholder="Szukaj produktów..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    style={{ marginRight: 8, padding: 5 }}
-                />
+                <input type="text" placeholder="Szukaj..." value={search} onChange={e => setSearch(e.target.value)} style={{ marginRight: 8, padding: 5 }} />
                 <button onClick={() => fetchProducts(search)}>Szukaj</button>
             </div>
-
             <ul style={{textAlign: 'left'}}>
                 {products.map(p => (
                     <li key={p.id} style={{marginBottom: 5, display: 'flex', alignItems: 'center'}}>
-                        <button onClick={() => onSelect(p.id)} style={{ marginRight: 8 }}>
-                            Podgląd
-                        </button>
-                        {p.name ?? `Product ${p.id}`} — <b>{p.price ?? "?"} zł</b>
-                        <button
-                            onClick={() => onAddToCart(p)}
-                            style={{ marginLeft: 10, padding: "2px 5px", backgroundColor: "#4a4", color: "white" }}>
+                        <button onClick={() => onSelect(p.id)} style={{ marginRight: 8 }}>Podgląd</button>
+                        {p.name} — <b>{p.price} zł</b>
+                        <button onClick={() => onAddToCart(p)} style={{ marginLeft: 10, padding: "2px 5px", backgroundColor: "#4a4", color: "white" }}>
                             Dodaj do koszyka
                         </button>
                     </li>
@@ -121,392 +108,213 @@ function ProductsList({ onSelect, onAddToCart }) {
     );
 }
 
-// --- ProductDetails (Updated) ---
+// --- ProductDetails Component ---
 function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCart }) {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState("");
 
     useEffect(() => {
         if (!id) return;
         setLoading(true);
-        fetch(`${BASE}/product/${id}`, { credentials: 'include' }) // Added credentials
-            .then(res => {
-                if (res.status === 404) throw new Error("Not found");
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                return res.json();
-            })
+        fetch(`${BASE}/product/${id}`, { credentials: 'include' })
+            .then(res => res.json())
             .then(p => setProduct(p))
-            .catch(e => setMessage(e.message))
+            .catch(e => console.error(e))
             .finally(() => setLoading(false));
     }, [id]);
 
-    const deleteProduct = () => {
-        if (!window.confirm("Delete this product?")) return;
-        fetch(`${BASE}/product/${id}`, {
-            method: "DELETE",
-            credentials: 'include' // Added credentials
-        })
-            .then(res => res.text().then(text => ({ ok: res.ok, status: res.status, text })))
-            .then(r => {
-                if (r.ok) {
-                    setMessage("Deleted");
-                    refreshList?.();
-                    setTimeout(onBack, 1000);
-                } else {
-                    setMessage(`Failed: ${r.text || r.status}`);
-                }
-            })
-            .catch(e => setMessage(e.message));
-    };
-
-    if (!id) return null;
-    if (loading) return <div>Loading product…</div>;
-    if (message && !product) return <div style={{ color: "red" }}>Error: {message}</div>;
-
-    const baseStyle = { border: '1px solid #555', padding: 20, borderRadius: 8 };
+    if (!product) return <div>Loading...</div>;
 
     return (
-        <div style={isEditable ? baseStyle : baseStyle}>
+        <div style={{ border: '1px solid #555', padding: 20, borderRadius: 8 }}>
             <button onClick={onBack}>← Wróć do listy</button>
-            <h3>Szczegóły produktu</h3>
-            {product && (
-                <div style={isEditable ? {textAlign: 'left'} : {}} className={!isEditable ? "product-card" : ""}>
-                    <div><strong>ID:</strong> {product.id}</div>
-                    <div><strong>Name:</strong> {product.name}</div>
-                    <div><strong>Price:</strong> {product.price}</div>
-                    <div><strong>Description:</strong> {product.description}</div>
-                    {!isEditable && (
-                        <button
-                            onClick={() => onAddToCart(product)}
-                            style={{ marginTop: 10, padding: "5px 10px", backgroundColor: "#4a4", color: "white" }}>
-                            Dodaj do koszyka
-                        </button>
-                    )}
-                </div>
+            <h3>{product.name}</h3>
+            <div>Cena: {product.price}</div>
+            <p>{product.description}</p>
+            {!isEditable && (
+                <button onClick={() => onAddToCart(product)} style={{ marginTop: 10, backgroundColor: "#4a4", color: "white" }}>
+                    Dodaj do koszyka
+                </button>
             )}
-            {/* Map iframe code remains same */}
-            {product && product.latitude && product.longitude && (
-                 <div style={{ marginBottom: 20, textAlign: 'center' }}>
-                 <h4>Lokalizacja na mapie</h4>
-                 <iframe
-                     src={`https://maps.google.com/maps?q=${product.latitude},${product.longitude}&z=15&output=embed`}
-                     width="25%"
-                     height="300"
-                     style={{ border: 0 }}
-                     allowFullScreen=""
-                     loading="lazy"
-                     referrerPolicy="no-referrer-when-downgrade"
-                     title={`Lokalizacja ${product.name}`}
-                 ></iframe>
-             </div>
-            )}
-            {isEditable && (
-                <>
-                    <hr />
-                    <UpdateProductForm
-                        product={product}
-                        onUpdate={(msg) => { setMessage(msg); refreshList?.(); }}
-                    />
-                    <hr />
-                    <button onClick={deleteProduct} style={{backgroundColor: '#b33'}}>Usuń produkt</button>
-                </>
-            )}
-            <div style={{ marginTop: 10 }}>{message}</div>
         </div>
     );
 }
-
-// --- UpdateProductForm (Updated) ---
-function UpdateProductForm({ product, onUpdate }) {
-    const [name, setName] = useState(product?.name ?? "");
-    const [price, setPrice] = useState(product?.price ?? "");
-    const [desc, setDesc] = useState(product?.description ?? "");
-    const [msg, setMsg] = useState("");
-
-    useEffect(() => {
-        setName(product?.name ?? "");
-        setPrice(product?.price ?? "");
-        setDesc(product?.description ?? "");
-        setMsg("");
-    }, [product]);
-
-    const submitAsJson = async (e) => {
-        e.preventDefault();
-        if (!product) return setMsg("No product loaded");
-        const payload = { id: product.id, name, price, description: desc };
-
-        try {
-            const res = await fetch(`${BASE}/product/${product.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                credentials: 'include', // Added credentials
-                body: JSON.stringify(payload),
-            });
-            const text = await res.text();
-            if (res.ok) {
-                setMsg("Zaktualizowano!");
-                onUpdate?.(text);
-            } else {
-                setMsg("Błąd aktualizacji: " + text);
-            }
-        } catch (err) {
-            setMsg(err.message);
-        }
-    };
-
-    return (
-        <div>
-            <h4>Edytuj produkt</h4>
-            <form onSubmit={submitAsJson} style={{display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 300, margin: 'auto'}}>
-                <label>Nazwa: <input value={name} onChange={e => setName(e.target.value)} /></label>
-                <label>Cena: <input value={price} onChange={e => setPrice(e.target.value)} /></label>
-                <label>Opis:<br />
-                    <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} cols={30} />
-                </label>
-                <button type="submit">Zapisz zmiany</button>
-            </form>
-            <div style={{ marginTop: 8 }}>{msg}</div>
-        </div>
-    );
-}
-
 
 // --- MAIN APP COMPONENT ---
-
 export default function App() {
     const [user, setUser] = useState(null);
-    const [authView, setAuthView] = useState('login');
-    const [isLoadingUser, setIsLoadingUser] = useState(true); // Prevents flickering on refresh
+    const [isLoadingUser, setIsLoadingUser] = useState(true);
 
-    // Stany dla widoków
+    // View State: 'store' | 'login' | 'register'
+    const [currentView, setCurrentView] = useState('store');
+
+    // Store State
     const [selectedId, setSelectedId] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0);
-    const forceRefresh = () => setRefreshKey(k => k + 1);
-    const [mode, setMode] = useState('list');
+    const [mode, setMode] = useState('list'); // 'list' | 'details' | 'admin'
     const [isEditing, setIsEditing] = useState(false);
 
-    // Stany dla koszyka
+    // Cart State
     const [cart, setCart] = useState([]);
-    const [activeTab, setActiveTab] = useState("products");
+    const [activeTab, setActiveTab] = useState("products"); // 'products' | 'cart'
 
-    // --- 1. REHYDRATION LOGIC (CHECK COOKIE ON LOAD) ---
+    // 1. REHYDRATION (Check Cookie)
     useEffect(() => {
         const checkLoginStatus = async () => {
             try {
-                // Calls the backend endpoint that checks the httpOnly cookie
-                const res = await fetch(`${BASE}/auth/me`, {
-                    method: "GET",
-                    credentials: "include"
-                });
-
+                const res = await fetch(`${BASE}/auth/me`, { method: "GET", credentials: "include" });
                 if (res.ok) {
                     const userData = await res.json();
-                    setUser(userData); // Restore user session
+                    setUser(userData);
                 }
-            } catch (err) {
-                console.log("No valid session found");
-            } finally {
-                setIsLoadingUser(false); // Stop loading regardless of result
-            }
+            } catch (err) { console.log("Guest User"); }
+            finally { setIsLoadingUser(false); }
         };
         checkLoginStatus();
     }, []);
 
-    // Funkcje koszyka
-    const addToCart = (product) => {
-        setCart(prev => [...prev, product]);
-        setActiveTab("products");
-    };
-    const removeFromCart = (index) => {
-        setCart(prev => prev.filter((_, i) => i !== index));
-    };
-
+    // 2. CHECKOUT LOGIC
     const handleCheckout = async () => {
-        if(cart.length === 0) return alert("Koszyk jest pusty");
-        const orderItems = cart.map(item => ({ productId: item.id, quantity: 1 }));
+        if (cart.length === 0) return alert("Koszyk jest pusty");
+
+        if (!user) {
+            alert("Musisz się zalogować, aby złożyć zamówienie.");
+            setCurrentView('login');
+            return;
+        }
 
         try {
+            const orderItems = cart.map(item => ({ productId: item.id, quantity: 1 }));
             const res = await fetch(`${BASE}/order/create`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                credentials: 'include', // Added credentials
+                credentials: 'include',
                 body: JSON.stringify(orderItems),
             });
 
             if(res.ok) {
                 alert("Zamówienie złożone!");
                 setCart([]);
-                forceRefresh();
+                setRefreshKey(k => k+1);
                 setActiveTab("products");
             } else {
-                const text = await res.text();
-                alert("Błąd: " + text);
+                alert("Błąd zamówienia");
             }
         } catch(err) {
             alert("Błąd: " + err.message);
         }
     };
 
+    const handleLoginSuccess = (userData) => {
+        setUser(userData);
+        setCurrentView('store');
+    };
 
     const handleLogout = async () => {
-        try {
-            // Must call backend to clear the cookie
-            await fetch(`${BASE}/auth/logout`, {
-                method: "POST",
-                credentials: "include"
-            });
-        } catch(e) {
-            console.error("Logout failed", e);
-        }
-
+        await fetch(`${BASE}/auth/logout`, { method: "POST", credentials: "include" });
         setUser(null);
-        setAuthView('login');
-        setMode('list');
-        setActiveTab('products');
         setCart([]);
-    };
-
-    const returnToListMode = () => {
-        setSelectedId(null);
         setMode('list');
-        setIsEditing(false);
         setActiveTab('products');
     };
 
-    const handleViewProduct = (id) => {
-        setSelectedId(id);
-        setMode('details');
-        setIsEditing(false);
-        setActiveTab('products');
-    };
+    // --- RENDER ---
 
-    const handleEditProduct = (id) => {
-        setSelectedId(id);
-        setMode('details');
-        setIsEditing(true);
-        setActiveTab('products');
-    };
+    if (isLoadingUser) return <div>Ładowanie...</div>;
 
-    // --- 0. WIDOK ŁADOWANIA (Zapobiega miganiu ekranu logowania) ---
-    if (isLoadingUser) {
+    if (currentView === 'login') {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-                <h2>☕ Ładowanie KawUZ...</h2>
-            </div>
-        );
-    }
-
-    // --- 1. WIDOK BEZ AUTORYZACJI (LOGOWANIE / REJESTRACJA) ---
-    if (!user) {
-        return (
-            <div style={{ textAlign: 'center', marginTop: 50 }}>
-                <h1>☕ KawUZ System</h1>
-                {authView === 'login' ? (
-                    <Login
-                        onSwitchToRegister={() => setAuthView('register')}
-                        onLoginSuccess={(userData) => setUser(userData)}
-                    />
-                ) : (
-                    <Register
-                        onSwitchToLogin={() => setAuthView('login')}
-                    />
-                )}
-            </div>
-        );
-    }
-
-    // --- 2. WIDOK PO ZALOGOWANIU ---
-
-    // Obsługa trybu Admina
-    if (mode === 'admin' && user.isAdmin) {
-        return (
-            <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
-                <h1>Panel Administracyjny</h1>
-                <button onClick={returnToListMode}>Powrót do strony głównej</button>
-                <AdminPanel
-                    forceRefresh={forceRefresh}
-                    onEdit={handleEditProduct}
+            <div style={{textAlign: 'center', marginTop: 50}}>
+                <Login
+                    onSwitchToRegister={() => setCurrentView('register')}
+                    onLoginSuccess={handleLoginSuccess}
+                    onCancel={() => setCurrentView('store')}
                 />
             </div>
         );
     }
 
-    // Główny widok listy/szczegółów/koszyka (dla zalogowanych)
+    if (currentView === 'register') {
+        return (
+            <div style={{textAlign: 'center', marginTop: 50}}>
+                <Register onSwitchToLogin={() => setCurrentView('login')} />
+                <button onClick={() => setCurrentView('store')} style={{marginTop: 20}}>Anuluj</button>
+            </div>
+        );
+    }
+
+    // 3. MAIN STORE VIEW
     return (
         <div style={{ padding: 20, fontFamily: 'sans-serif', textAlign: 'center' }}>
 
-            {/* Nagłówek i Wylogowanie */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderBottom: '1px solid #444',
-                paddingBottom: 10,
-                marginBottom: 20
-            }}>
+            {/* HEADER */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #444', paddingBottom: 10, marginBottom: 20 }}>
                 <h1>☕ KawUZ</h1>
 
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                    <div style={{ marginBottom: user.isAdmin ? 5 : 0 }}>
-                        <span>Witaj, <b>{user.username}</b>! </span>
-                        <button onClick={handleLogout} style={{marginLeft: 10, padding: '5px 10px'}}>Wyloguj</button>
-                    </div>
-
-                    {user.isAdmin && (
-                        <button
-                            onClick={() => {setMode('admin'); setActiveTab('products'); setSelectedId(null);}}
-                            className="admin-button"
-                            style={{ padding: '5px 10px' }}
-                        >
-                            Przejdź do Panelu Admina
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {user ? (
+                        <>
+                            <span>Witaj, <b>{user.username}</b>!</span>
+                            {user.isAdmin && (
+                                <button onClick={() => { setMode('admin'); setActiveTab('products'); setSelectedId(null); }}>
+                                    Panel Admina
+                                </button>
+                            )}
+                            <button onClick={handleLogout}>Wyloguj</button>
+                        </>
+                    ) : (
+                        <button onClick={() => setCurrentView('login')} style={{fontWeight: 'bold', backgroundColor: '#448'}}>
+                            Zaloguj się
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Zakładki dla Użytkownika (Produkty / Koszyk) */}
-            <div style={{ marginBottom: 20 }}>
-                <button
-                    onClick={() => { setActiveTab("products"); setSelectedId(null); setMode('list'); setIsEditing(false); }}
-                    style={{ marginRight: 10, fontWeight: activeTab === "products" ? 'bold' : 'normal' }}
-                >
-                    Produkty
-                </button>
-                <button
-                    onClick={() => { setActiveTab("cart"); setSelectedId(null); setMode('list'); setIsEditing(false); }}
-                    style={{ fontWeight: activeTab === "cart" ? 'bold' : 'normal' }}
-                >
-                    Koszyk ({cart.length})
-                </button>
-            </div>
+            {/* CONDITIONAL RENDERING: ADMIN vs STORE */}
+            {user?.isAdmin && mode === 'admin' ? (
+                /* ADMIN VIEW */
+                <div>
+                    <button onClick={() => setMode('list')} style={{marginBottom: 10}}>Powrót do sklepu</button>
+                    <AdminPanel
+                        forceRefresh={() => setRefreshKey(k => k+1)}
+                        onEdit={(id) => { setSelectedId(id); setMode('details'); setIsEditing(true); }}
+                    />
+                </div>
+            ) : (
+                /* STANDARD STORE VIEW */
+                <>
+                    {/* TABS */}
+                    <div style={{ marginBottom: 20 }}>
+                        <button onClick={() => { setActiveTab("products"); setSelectedId(null); setMode('list'); }} style={{ fontWeight: activeTab === "products" ? 'bold' : 'normal' }}>
+                            Produkty
+                        </button>
+                        <button onClick={() => { setActiveTab("cart"); setSelectedId(null); setMode('list'); }} style={{ fontWeight: activeTab === "cart" ? 'bold' : 'normal', marginLeft: 10 }}>
+                            Koszyk ({cart.length})
+                        </button>
+                    </div>
 
-            {/* WIDOK PRODUKTÓW */}
-            {activeTab === "products" && !selectedId && mode === 'list' && (
-                <ProductsList
-                    key={refreshKey}
-                    onSelect={handleViewProduct}
-                    onAddToCart={addToCart}
-                />
-            )}
+                    {/* CONTENT */}
+                    {activeTab === "products" && !selectedId && (
+                        <ProductsList key={refreshKey} onSelect={(id) => { setSelectedId(id); setMode('details'); }} onAddToCart={(p) => setCart(prev => [...prev, p])} />
+                    )}
 
-            {activeTab === "products" && selectedId && mode === 'details' && (
-                <ProductDetails
-                    id={selectedId}
-                    onBack={returnToListMode}
-                    refreshList={forceRefresh}
-                    isEditable={isEditing && user.isAdmin}
-                    onAddToCart={addToCart}
-                />
-            )}
+                    {activeTab === "products" && selectedId && (
+                        <ProductDetails
+                            id={selectedId}
+                            onBack={() => { setSelectedId(null); setMode('list'); }}
+                            onAddToCart={(p) => setCart(prev => [...prev, p])}
+                            isEditable={user?.isAdmin && isEditing}
+                        />
+                    )}
 
-            {/* WIDOK KOSZYKA */}
-            {activeTab === "cart" && (
-                <Cart
-                    cart={cart}
-                    onRemove={removeFromCart}
-                    onCheckout={handleCheckout}
-                />
+                    {activeTab === "cart" && (
+                        <Cart
+                            cart={cart}
+                            onRemove={(idx) => setCart(prev => prev.filter((_, i) => i !== idx))}
+                            onCheckout={handleCheckout}
+                        />
+                    )}
+                </>
             )}
         </div>
     );
