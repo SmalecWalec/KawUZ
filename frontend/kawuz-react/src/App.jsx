@@ -1,15 +1,60 @@
-// src/App.jsx
-
 import React, { useEffect, useState } from "react";
-import AdminPanel from './AdminPanel';
-import Login from "./Login";
+import AdminPanel from './AdminPanel'; // Ensure this component also uses credentials: 'include' internally if it fetches data
 import Register from "./Register";
 import Cart from "./Cart";
 
 const BASE = "http://localhost:8080/api";
 
-// --- ProductsList ---
+// --- Login Component (Updated) ---
+function Login({ onSwitchToRegister, onLoginSuccess }) {
+    const [formData, setFormData] = useState({ username: '', password: '' });
+    const [msg, setMsg] = useState('');
 
+    const handleLogin = async () => {
+        try {
+            const res = await fetch(`${BASE}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // <--- CRITICAL: Allows browser to save the cookie
+                body: JSON.stringify(formData)
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                setMsg("✅ Zalogowano!");
+                setTimeout(() => onLoginSuccess({
+                    username: data.username,
+                    isAdmin: data.isAdmin
+                }), 1000);
+            } else {
+                setMsg("⚠️ " + data.message);
+            }
+        } catch (err) {
+            setMsg("Błąd połączenia.");
+        }
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        handleLogin();
+    };
+
+    return (
+        <form
+            onSubmit={handleSubmit}
+            style={{ padding: 20, border: '1px solid #ccc', margin: '20px auto', maxWidth: 300, background: '#222', color: 'white' }}
+        >
+            <h3>Logowanie</h3>
+            <input placeholder="Login" onChange={e => setFormData({...formData, username: e.target.value})} style={{ marginBottom: 10, padding: 5, width: '90%' }}/><br/>
+            <input type="password" placeholder="Hasło" onChange={e => setFormData({...formData, password: e.target.value})} style={{ marginBottom: 10, padding: 5, width: '90%' }}/><br/>
+            <button type="submit">Zaloguj się</button>
+            <p>{msg}</p>
+            <button onClick={onSwitchToRegister} type="button" style={{ background: 'none', border: 'none', color: '#88f', cursor: 'pointer', marginTop: 10 }}>Nie mam konta</button>
+        </form>
+    );
+}
+
+// --- ProductsList (Updated) ---
 function ProductsList({ onSelect, onAddToCart }) {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -25,7 +70,7 @@ function ProductsList({ onSelect, onAddToCart }) {
             url = `${BASE}/product/search?keyword=${encodeURIComponent(keyword)}`;
         }
 
-        fetch(url)
+        fetch(url, { credentials: 'include' }) // Added credentials
             .then(res => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 return res.json();
@@ -76,8 +121,7 @@ function ProductsList({ onSelect, onAddToCart }) {
     );
 }
 
-// --- ProductDetails ---
-
+// --- ProductDetails (Updated) ---
 function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCart }) {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -86,7 +130,7 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
     useEffect(() => {
         if (!id) return;
         setLoading(true);
-        fetch(`${BASE}/product/${id}`)
+        fetch(`${BASE}/product/${id}`, { credentials: 'include' }) // Added credentials
             .then(res => {
                 if (res.status === 404) throw new Error("Not found");
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -99,7 +143,10 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
 
     const deleteProduct = () => {
         if (!window.confirm("Delete this product?")) return;
-        fetch(`${BASE}/product/${id}`, { method: "DELETE" })
+        fetch(`${BASE}/product/${id}`, {
+            method: "DELETE",
+            credentials: 'include' // Added credentials
+        })
             .then(res => res.text().then(text => ({ ok: res.ok, status: res.status, text })))
             .then(r => {
                 if (r.ok) {
@@ -138,20 +185,21 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
                     )}
                 </div>
             )}
+            {/* Map iframe code remains same */}
             {product && product.latitude && product.longitude && (
-                <div style={{ marginBottom: 20, textAlign: 'center' }}>
-                    <h4>Lokalizacja na mapie</h4>
-                    <iframe
-                        src={`https://maps.google.com/maps?q=${product.latitude},${product.longitude}&z=15&output=embed`}
-                        width="25%"
-                        height="300"
-                        style={{ border: 0 }}
-                        allowFullScreen=""
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        title={`Lokalizacja ${product.name}`}
-                    ></iframe>
-                </div>
+                 <div style={{ marginBottom: 20, textAlign: 'center' }}>
+                 <h4>Lokalizacja na mapie</h4>
+                 <iframe
+                     src={`https://maps.google.com/maps?q=${product.latitude},${product.longitude}&z=15&output=embed`}
+                     width="25%"
+                     height="300"
+                     style={{ border: 0 }}
+                     allowFullScreen=""
+                     loading="lazy"
+                     referrerPolicy="no-referrer-when-downgrade"
+                     title={`Lokalizacja ${product.name}`}
+                 ></iframe>
+             </div>
             )}
             {isEditable && (
                 <>
@@ -169,8 +217,7 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
     );
 }
 
-// --- UpdateProductForm ---
-
+// --- UpdateProductForm (Updated) ---
 function UpdateProductForm({ product, onUpdate }) {
     const [name, setName] = useState(product?.name ?? "");
     const [price, setPrice] = useState(product?.price ?? "");
@@ -193,6 +240,7 @@ function UpdateProductForm({ product, onUpdate }) {
             const res = await fetch(`${BASE}/product/${product.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
+                credentials: 'include', // Added credentials
                 body: JSON.stringify(payload),
             });
             const text = await res.text();
@@ -224,11 +272,12 @@ function UpdateProductForm({ product, onUpdate }) {
 }
 
 
-// --- GŁÓWNY KOMPONENT APP() ---
+// --- MAIN APP COMPONENT ---
 
 export default function App() {
     const [user, setUser] = useState(null);
     const [authView, setAuthView] = useState('login');
+    const [isLoadingUser, setIsLoadingUser] = useState(true); // Prevents flickering on refresh
 
     // Stany dla widoków
     const [selectedId, setSelectedId] = useState(null);
@@ -240,6 +289,29 @@ export default function App() {
     // Stany dla koszyka
     const [cart, setCart] = useState([]);
     const [activeTab, setActiveTab] = useState("products");
+
+    // --- 1. REHYDRATION LOGIC (CHECK COOKIE ON LOAD) ---
+    useEffect(() => {
+        const checkLoginStatus = async () => {
+            try {
+                // Calls the backend endpoint that checks the httpOnly cookie
+                const res = await fetch(`${BASE}/auth/me`, {
+                    method: "GET",
+                    credentials: "include"
+                });
+
+                if (res.ok) {
+                    const userData = await res.json();
+                    setUser(userData); // Restore user session
+                }
+            } catch (err) {
+                console.log("No valid session found");
+            } finally {
+                setIsLoadingUser(false); // Stop loading regardless of result
+            }
+        };
+        checkLoginStatus();
+    }, []);
 
     // Funkcje koszyka
     const addToCart = (product) => {
@@ -258,6 +330,7 @@ export default function App() {
             const res = await fetch(`${BASE}/order/create`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                credentials: 'include', // Added credentials
                 body: JSON.stringify(orderItems),
             });
 
@@ -276,13 +349,24 @@ export default function App() {
     };
 
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            // Must call backend to clear the cookie
+            await fetch(`${BASE}/auth/logout`, {
+                method: "POST",
+                credentials: "include"
+            });
+        } catch(e) {
+            console.error("Logout failed", e);
+        }
+
         setUser(null);
         setAuthView('login');
         setMode('list');
         setActiveTab('products');
         setCart([]);
     };
+
     const returnToListMode = () => {
         setSelectedId(null);
         setMode('list');
@@ -304,7 +388,16 @@ export default function App() {
         setActiveTab('products');
     };
 
-    // 1. WIDOK BEZ AUTORYZACJI (LOGOWANIE / REJESTRACJA)
+    // --- 0. WIDOK ŁADOWANIA (Zapobiega miganiu ekranu logowania) ---
+    if (isLoadingUser) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
+                <h2>☕ Ładowanie KawUZ...</h2>
+            </div>
+        );
+    }
+
+    // --- 1. WIDOK BEZ AUTORYZACJI (LOGOWANIE / REJESTRACJA) ---
     if (!user) {
         return (
             <div style={{ textAlign: 'center', marginTop: 50 }}>
@@ -323,7 +416,7 @@ export default function App() {
         );
     }
 
-    // 2. WIDOK PO ZALOGOWANIU
+    // --- 2. WIDOK PO ZALOGOWANIU ---
 
     // Obsługa trybu Admina
     if (mode === 'admin' && user.isAdmin) {

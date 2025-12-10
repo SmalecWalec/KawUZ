@@ -9,6 +9,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
             const res = await fetch('http://localhost:8080/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // <--- IMPORTANT: Allows browser to save the cookie
                 body: JSON.stringify(formData)
             });
             const data = await res.json();
