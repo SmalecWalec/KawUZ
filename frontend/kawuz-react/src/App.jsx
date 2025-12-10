@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
-// Ensure these components exist in your project, or remove/comment them if not
+// Remove these imports if you don't have these files, or keep them if you do.
+// For this single-file demo, I assume AdminPanel/Register/Cart are external or unused,
+// but I will include the logic for Cart and Register inside this file if they were separate before.
 import AdminPanel from './AdminPanel';
 import Register from "./Register";
 import Cart from "./Cart";
@@ -58,6 +60,60 @@ function Login({ onSwitchToRegister, onLoginSuccess, onCancel }) {
     );
 }
 
+// --- UpdateProductForm (RESTORED) ---
+function UpdateProductForm({ product, onUpdate }) {
+    const [name, setName] = useState(product?.name ?? "");
+    const [price, setPrice] = useState(product?.price ?? "");
+    const [desc, setDesc] = useState(product?.description ?? "");
+    const [msg, setMsg] = useState("");
+
+    useEffect(() => {
+        setName(product?.name ?? "");
+        setPrice(product?.price ?? "");
+        setDesc(product?.description ?? "");
+        setMsg("");
+    }, [product]);
+
+    const submitAsJson = async (e) => {
+        e.preventDefault();
+        if (!product) return setMsg("No product loaded");
+        const payload = { id: product.id, name, price, description: desc };
+
+        try {
+            const res = await fetch(`${BASE}/product/${product.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                credentials: 'include', // Added credentials
+                body: JSON.stringify(payload),
+            });
+            const text = await res.text();
+            if (res.ok) {
+                setMsg("Zaktualizowano!");
+                onUpdate?.(text);
+            } else {
+                setMsg("Błąd aktualizacji: " + text);
+            }
+        } catch (err) {
+            setMsg(err.message);
+        }
+    };
+
+    return (
+        <div>
+            <h4>Edytuj produkt</h4>
+            <form onSubmit={submitAsJson} style={{display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 300, margin: 'auto'}}>
+                <label>Nazwa: <input value={name} onChange={e => setName(e.target.value)} /></label>
+                <label>Cena: <input value={price} onChange={e => setPrice(e.target.value)} /></label>
+                <label>Opis:<br />
+                    <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} cols={30} />
+                </label>
+                <button type="submit">Zapisz zmiany</button>
+            </form>
+            <div style={{ marginTop: 8 }}>{msg}</div>
+        </div>
+    );
+}
+
 // --- ProductsList Component ---
 function ProductsList({ onSelect, onAddToCart }) {
     const [products, setProducts] = useState([]);
@@ -108,34 +164,97 @@ function ProductsList({ onSelect, onAddToCart }) {
     );
 }
 
-// --- ProductDetails Component ---
+// --- ProductDetails Component (RESTORED MAP & EDIT LOGIC) ---
 function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCart }) {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState("");
 
     useEffect(() => {
         if (!id) return;
         setLoading(true);
         fetch(`${BASE}/product/${id}`, { credentials: 'include' })
-            .then(res => res.json())
+            .then(res => {
+                if(res.status === 404) throw new Error("Product not found");
+                if(!res.ok) throw new Error("Error fetching product");
+                return res.json();
+            })
             .then(p => setProduct(p))
-            .catch(e => console.error(e))
+            .catch(e => setMessage(e.message))
             .finally(() => setLoading(false));
     }, [id]);
 
+    // --- RESTORED: Delete Logic ---
+    const deleteProduct = () => {
+        if (!window.confirm("Delete this product?")) return;
+        fetch(`${BASE}/product/${id}`, {
+            method: "DELETE",
+            credentials: 'include'
+        })
+        .then(res => res.text().then(text => ({ ok: res.ok, status: res.status, text })))
+        .then(r => {
+            if (r.ok) {
+                setMessage("Deleted");
+                refreshList?.();
+                setTimeout(onBack, 1000);
+            } else {
+                setMessage(`Failed: ${r.text || r.status}`);
+            }
+        })
+        .catch(e => setMessage(e.message));
+    };
+
     if (!product) return <div>Loading...</div>;
+    if (message && !product) return <div style={{ color: "red" }}>Error: {message}</div>;
 
     return (
         <div style={{ border: '1px solid #555', padding: 20, borderRadius: 8 }}>
             <button onClick={onBack}>← Wróć do listy</button>
-            <h3>{product.name}</h3>
-            <div>Cena: {product.price}</div>
-            <p>{product.description}</p>
-            {!isEditable && (
-                <button onClick={() => onAddToCart(product)} style={{ marginTop: 10, backgroundColor: "#4a4", color: "white" }}>
-                    Dodaj do koszyka
-                </button>
+            <h3>Szczegóły produktu</h3>
+
+            <div style={isEditable ? {textAlign: 'left'} : {}} className={!isEditable ? "product-card" : ""}>
+                <div><strong>ID:</strong> {product.id}</div>
+                <div><strong>Name:</strong> {product.name}</div>
+                <div><strong>Price:</strong> {product.price}</div>
+                <div><strong>Description:</strong> {product.description}</div>
+
+                {!isEditable && (
+                    <button onClick={() => onAddToCart(product)} style={{ marginTop: 10, backgroundColor: "#4a4", color: "white", padding: "5px 10px" }}>
+                        Dodaj do koszyka
+                    </button>
+                )}
+            </div>
+
+            {/* --- RESTORED: Map Logic --- */}
+            {product && product.latitude && product.longitude && (
+                 <div style={{ marginBottom: 20, textAlign: 'center', marginTop: 20 }}>
+                 <h4>Lokalizacja na mapie</h4>
+                 <iframe
+                     src={`https://maps.google.com/maps?q=${product.latitude},${product.longitude}&z=15&output=embed`}
+                     width="25%"
+                     height="300"
+                     style={{ border: 0 }}
+                     allowFullScreen=""
+                     loading="lazy"
+                     referrerPolicy="no-referrer-when-downgrade"
+                     title={`Lokalizacja ${product.name}`}
+                 ></iframe>
+             </div>
             )}
+
+            {/* --- RESTORED: Admin Edit/Delete Forms --- */}
+            {isEditable && (
+                <>
+                    <hr />
+                    <UpdateProductForm
+                        product={product}
+                        onUpdate={(msg) => { setMessage(msg); refreshList?.(); }}
+                    />
+                    <hr />
+                    <button onClick={deleteProduct} style={{backgroundColor: '#b33'}}>Usuń produkt</button>
+                </>
+            )}
+            <div style={{ marginTop: 10 }}>{message}</div>
         </div>
     );
 }
@@ -303,6 +422,7 @@ export default function App() {
                             id={selectedId}
                             onBack={() => { setSelectedId(null); setMode('list'); }}
                             onAddToCart={(p) => setCart(prev => [...prev, p])}
+                            refreshList={() => setRefreshKey(k => k+1)}
                             isEditable={user?.isAdmin && isEditing}
                         />
                     )}
