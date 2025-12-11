@@ -226,11 +226,11 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
             </div>
 
             {/* --- RESTORED: Map Logic --- */}
-            {product && product.latitude && product.longitude && (
+            {product && product.map &&(
                  <div style={{ marginBottom: 20, textAlign: 'center', marginTop: 20 }}>
                  <h4>Lokalizacja na mapie</h4>
                  <iframe
-                     src={`https://maps.google.com/maps?q=${product.latitude},${product.longitude}&z=15&output=embed`}
+                     src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyB2NIWI3Tv9iDPrlnowr_0ZqZWoAQydKJU&q=${product.map}&maptype=roadmap`}
                      width="25%"
                      height="300"
                      style={{ border: 0 }}
