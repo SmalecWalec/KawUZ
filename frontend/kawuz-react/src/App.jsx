@@ -1,66 +1,34 @@
-import React, { useEffect, useState } from "react";
-// Remove these imports if you don't have these files, or keep them if you do.
-// For this single-file demo, I assume AdminPanel/Register/Cart are external or unused,
-// but I will include the logic for Cart and Register inside this file if they were separate before.
+import React, { useEffect, useState, useCallback } from "react";
+// Zakładane importy zewnętrznych komponentów
 import AdminPanel from './AdminPanel';
 import Register from "./Register";
 import Cart from "./Cart";
+import Login from './Login';
+import "./css/App.css"
 
 const BASE = "http://localhost:8080/api";
 
-// --- Login Component ---
-function Login({ onSwitchToRegister, onLoginSuccess, onCancel }) {
-    const [formData, setFormData] = useState({ username: '', password: '' });
-    const [msg, setMsg] = useState('');
-
-    const handleLogin = async () => {
-        try {
-            const res = await fetch(`${BASE}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify(formData)
-            });
-            const data = await res.json();
-
-            if (res.ok) {
-                setMsg("✅ Zalogowano!");
-                setTimeout(() => onLoginSuccess({
-                    username: data.username,
-                    isAdmin: data.isAdmin
-                }), 500);
-            } else {
-                setMsg("⚠️ " + data.message);
-            }
-        } catch (err) {
-            setMsg("Błąd połączenia.");
+const debounce = (func, delay) => {
+    let timeoutId;
+    return function(...args) {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
         }
+        timeoutId = setTimeout(() => {
+            func.apply(this, args);
+        }, delay);
     };
+};
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        handleLogin();
-    };
+// --- Pomocnicze ładowanie obrazów (Metoda Publiczna) ---
+const getProductImage = (productName) => {
+    const encodedName = encodeURIComponent(productName);
+    const imageUrl = `/images/${encodedName}.png`;
+    const mockImageUrl = "https://via.placeholder.com/80x80?text=Kawa";
+    return imageUrl || mockImageUrl;
+};
 
-    return (
-        <form
-            onSubmit={handleSubmit}
-            style={{ padding: 20, border: '1px solid #ccc', margin: '20px auto', maxWidth: 300, background: '#222', color: 'white' }}
-        >
-            <h3>Logowanie</h3>
-            <input placeholder="Login" onChange={e => setFormData({...formData, username: e.target.value})} style={{ marginBottom: 10, padding: 5, width: '90%' }}/><br/>
-            <input type="password" placeholder="Hasło" onChange={e => setFormData({...formData, password: e.target.value})} style={{ marginBottom: 10, padding: 5, width: '90%' }}/><br/>
-
-            <button type="submit" style={{marginRight: 10}}>Zaloguj się</button>
-            <button type="button" onClick={onCancel} style={{background: '#777'}}>Anuluj</button>
-
-            <p>{msg}</p>
-            <button onClick={onSwitchToRegister} type="button" style={{ background: 'none', border: 'none', color: '#88f', cursor: 'pointer', marginTop: 10 }}>Nie mam konta</button>
-        </form>
-    );
-}
-
-// --- UpdateProductForm (RESTORED) ---
+// --- UpdateProductForm ---
 function UpdateProductForm({ product, onUpdate }) {
     const [name, setName] = useState(product?.name ?? "");
     const [price, setPrice] = useState(product?.price ?? "");
@@ -83,7 +51,7 @@ function UpdateProductForm({ product, onUpdate }) {
             const res = await fetch(`${BASE}/product/${product.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                credentials: 'include', // Added credentials
+                credentials: 'include',
                 body: JSON.stringify(payload),
             });
             const text = await res.text();
@@ -121,7 +89,7 @@ function ProductsList({ onSelect, onAddToCart }) {
     const [err, setErr] = useState(null);
     const [search, setSearch] = useState("");
 
-    const fetchProducts = (keyword = "") => {
+    const fetchProducts = useCallback((keyword = "") => {
         setLoading(true);
         setErr(null);
         let url = `${BASE}/products`;
@@ -135,28 +103,112 @@ function ProductsList({ onSelect, onAddToCart }) {
             .then(data => setProducts(data))
             .catch(e => setErr(e.message))
             .finally(() => setLoading(false));
-    };
+    }, []);
 
-    useEffect(() => { fetchProducts(); }, []);
+    const debouncedFetchProducts = useCallback(
+        debounce(fetchProducts, 200),
+        [fetchProducts] // Pusta tablica zależności, aby funkcja była stała
+    );
 
-    if (loading) return <div>Loading products…</div>;
-    if (err) return <div style={{ color: "red" }}>Error: {err}</div>;
+    useEffect(() => {debouncedFetchProducts(search); return () => {}}, [search, debouncedFetchProducts]);
+    // if (loading) return <div>Ładowanie produktów…</div>;
+    // if (err) return <div style={{ color: "red" }}>Błąd: {err}</div>;
 
     return (
-        <div>
+        <div className="products-container">
             <h2>Lista Ofert (Kawa)</h2>
             <div style={{ marginBottom: 10 }}>
-                <input type="text" placeholder="Szukaj..." value={search} onChange={e => setSearch(e.target.value)} style={{ marginRight: 8, padding: 5 }} />
-                <button onClick={() => fetchProducts(search)}>Szukaj</button>
+                <input
+                    type="text"
+                    placeholder="Szukaj..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="search-input"
+                />
             </div>
-            <ul style={{textAlign: 'left'}}>
+            <ul style={{ listStyle: 'none', padding: 0, width: "100%" }}>
                 {products.map(p => (
-                    <li key={p.id} style={{marginBottom: 5, display: 'flex', alignItems: 'center'}}>
-                        <button onClick={() => onSelect(p.id)} style={{ marginRight: 8 }}>Podgląd</button>
-                        {p.name} — <b>{p.price} zł</b>
-                        <button onClick={() => onAddToCart(p)} style={{ marginLeft: 10, padding: "2px 5px", backgroundColor: "#4a4", color: "white" }}>
-                            Dodaj do koszyka
-                        </button>
+                    <li
+                        key={p.id}
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 15,
+                            border: '1px solid #ddd',
+                            padding: 10,
+                            borderRadius: 10,
+                            textAlign: 'left',
+                            width: "100%",
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                        }}
+                        className="productElement"
+                        onClick={() => onSelect(p.id)}
+                    >
+
+                        {/* 1. Zdjęcie - Lewa strona (Użycie getProductImage) */}
+                        <div style={{ marginRight: 15, flexShrink: 0,width: "33%", height: "33%" }}>
+                            <img
+                                src={getProductImage(p.name)}
+                                alt={p.name}
+                                style={{ width: "100%", height: "100%", objectFit: 'cover', borderRadius: 3 }}
+                            />
+                        </div>
+
+                        {/* 2. Nazwa i Opis - Środek, na lewo */}
+                        <div style={{ flexGrow: 1, minWidth: 0 }}>
+                            <h3
+                                style={{
+                                    margin: '0 0 5px 0',
+                                    fontSize: '1.2em',
+                                    color: '#007bff'
+                                }}
+                            >
+                                {p.name}
+                            </h3>
+                            <p style={{ margin: 0, color: '#666', fontSize: '0.9em', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                {p.description || "Brak opisu produktu."}
+                            </p>
+                        </div>
+
+                        {/* 3. Cena i Przycisk "Dodaj do koszyka" - Prawa strona */}
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'flex-end',
+                                marginLeft: 15,
+                                flexShrink: 0
+                            }}>
+                                {p.stockQuantity>=1 &&(
+                                <h5>TOWAR DOSTĘPNY NA MAGAZYNIE</h5>
+                                )}
+                                {p.stockQuantity<=0 &&(
+                                <h5>TOWAR NIEDOSTEPNY</h5>
+                                )}
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'row',
+                            }}>
+                                <b style={{ fontSize: '1.5em', color: '#333', marginRight:5}}>
+                                    {p.price} zł
+                                </b>
+                                <p style={{ fontSize: '0.75em'}}>brutto</p>
+                               </div>
+                                <button
+                                    onClick={() => onAddToCart(p)}
+                                    style={{
+                                        padding: "8px 15px",
+                                        backgroundColor: "#28a745",
+                                        color: "white",
+                                        border: 'none',
+                                        borderRadius: 3,
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Dodaj do koszyka
+                                </button>
+                            </div>
                     </li>
                 ))}
             </ul>
@@ -164,7 +216,7 @@ function ProductsList({ onSelect, onAddToCart }) {
     );
 }
 
-// --- ProductDetails Component (RESTORED MAP & EDIT LOGIC) ---
+// --- ProductDetails Component ---
 function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCart }) {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -173,10 +225,10 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
     useEffect(() => {
         if (!id) return;
         setLoading(true);
-        fetch(`${BASE}/product/${id}`, { credentials: 'include' })
+        fetch(`${BASE}/product/${id}`, {credentials: 'include'})
             .then(res => {
-                if(res.status === 404) throw new Error("Product not found");
-                if(!res.ok) throw new Error("Error fetching product");
+                if (res.status === 404) throw new Error("Product not found");
+                if (!res.ok) throw new Error("Error fetching product");
                 return res.json();
             })
             .then(p => setProduct(p))
@@ -184,81 +236,144 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
             .finally(() => setLoading(false));
     }, [id]);
 
-    // --- RESTORED: Delete Logic ---
     const deleteProduct = () => {
         if (!window.confirm("Delete this product?")) return;
         fetch(`${BASE}/product/${id}`, {
             method: "DELETE",
             credentials: 'include'
         })
-        .then(res => res.text().then(text => ({ ok: res.ok, status: res.status, text })))
-        .then(r => {
-            if (r.ok) {
-                setMessage("Deleted");
-                refreshList?.();
-                setTimeout(onBack, 1000);
-            } else {
-                setMessage(`Failed: ${r.text || r.status}`);
-            }
-        })
-        .catch(e => setMessage(e.message));
+            .then(res => res.text().then(text => ({ok: res.ok, status: res.status, text})))
+            .then(r => {
+                if (r.ok) {
+                    setMessage("Deleted");
+                    refreshList?.();
+                    setTimeout(onBack, 1000);
+                } else {
+                    setMessage(`Failed: ${r.text || r.status}`);
+                }
+            })
+            .catch(e => setMessage(e.message));
     };
 
-    if (!product) return <div>Loading...</div>;
-    if (message && !product) return <div style={{ color: "red" }}>Error: {message}</div>;
+    if (loading) return <div>Ładowanie szczegółów...</div>;
+    if (message && !product) return <div style={{color: "red"}}>Błąd: {message}</div>;
+    if (!product) return null;
+
 
     return (
-        <div style={{ border: '1px solid #555', padding: 20, borderRadius: 8 }}>
-            <button onClick={onBack}>← Wróć do listy</button>
+        <div style={{border: '1px solid #555', padding: 20, borderRadius: 8, width: '90%'}}>
             <h3>Szczegóły produktu</h3>
 
-            <div style={isEditable ? {textAlign: 'left'} : {}} className={!isEditable ? "product-card" : ""}>
-                <div><strong>ID:</strong> {product.id}</div>
-                <div><strong>Name:</strong> {product.name}</div>
-                <div><strong>Price:</strong> {product.price}</div>
-                <div><strong>Description:</strong> {product.description}</div>
+            {/* GŁÓWNY KONTENER SZCZEGÓŁÓW Z UKŁADEM FLEXBOX */}
+            <div
+                style={{
+                    display: 'flex',
+                    gap: '15px',
+                    alignItems: 'center',
+                    textAlign: 'left',
+                    marginBottom: 20,
+                }}
+                className={"product-card"}
+            >
+                {/* 1. KOLUMNA LEWA: Obrazek */}
+                <div style={{flexShrink: 0, width: "40%"}}>
+                    <img
+                        src={getProductImage(product.name)}
+                        alt={product.name}
+                        style={{width: "100%", height: "33%", objectFit: 'cover', borderRadius: 8}}
+                    />
+                </div>
 
-                {!isEditable && (
-                    <button onClick={() => onAddToCart(product)} style={{ marginTop: 10, backgroundColor: "#4a4", color: "white", padding: "5px 10px" }}>
-                        Dodaj do koszyka
-                    </button>
-                )}
+                {/* 2. KOLUMNA ŚRODKOWA: Nazwa i Opis */}
+{/*                 <div style={{flexGrow: 1, minWidth: 0, paddingTop: 10,justifyContent: 'center', justifyItems: 'center'}}> */}
+{/*                     <h4 style={{margin: '0 0 10px 0', fontSize: '1.5em'}}> */}
+{/*                         {product.name} */}
+{/*                     </h4> */}
+{/*                     <p style={{margin: '0 0 10px 0', color: '#666'}}> */}
+{/*                         {product.description} */}
+{/*                     </p> */}
+{/*                 </div> */}
+
+                {/* 3. KOLUMNA PRAWA: Cena, Koszyk i Mapa */}
+                <div style={{
+                    flexShrink: 0,
+                    width: '60%',
+                    textAlign: 'right',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: "center"
+                }}>
+
+                    <h4 style={{margin: '0 0 10px 0', fontSize: '1.5em'}}>
+                                            {product.name}
+                                        </h4>
+                                        <p style={{margin: '0 0 10px 0', color: '#666'}}>
+                                            {product.description}
+                                        </p>
+
+                    {/* CENA */}
+                    <b style={{fontSize: '2em', color: '#333', marginBottom: 10, marginTop: 1}}>
+                        {product.price} zł
+                    </b>
+
+                    {/* PRZYCISK KOSZYKA */}
+                    {!isEditable && (
+                        <button
+                            onClick={() => onAddToCart(product)}
+                            style={{
+                                backgroundColor: "#28a745",
+                                color: "white",
+                                padding: "10px 20px",
+                                border: 'none',
+                                borderRadius: 5,
+                                cursor: 'pointer',
+                                marginBottom: 15
+                            }}
+                        >
+                            Dodaj do koszyka
+                        </button>
+                    )}
+
+                    {/* LOKALIZACJA I MAPA */}
+                    {product && product.map && (
+                        <div style={{marginTop: 10, textAlign: 'center', width: '100%'}}>
+                            <h4 style={{margin: '5px 0'}}>Miejsce pochodzenia</h4>
+                            <iframe
+                                src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyB2NIWI3Tv9iDPrlnowr_0ZqZWoAQydKJU&q=$${product.map}&maptype=roadmap`}
+                                width="50%"
+                                height="75%"
+                                style={{border: 0, borderRadius: 5}}
+                                allowFullScreen="true"
+                                loading="lazy"
+                                referrerPolicy="no-referrer-when-downgrade"
+                            ></iframe>
+                        </div>
+                    )}
+                </div>
             </div>
+            {/* KONIEC GŁÓWNEGO UKŁADU FLEXBOX */}
 
-            {/* --- RESTORED: Map Logic --- */}
-            {product && product.map &&(
-                 <div style={{ marginBottom: 20, textAlign: 'center', marginTop: 20 }}>
-                 <h4>Lokalizacja na mapie</h4>
-                 <iframe
-                     src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyB2NIWI3Tv9iDPrlnowr_0ZqZWoAQydKJU&q=${product.map}&maptype=roadmap`}
-                     width="25%"
-                     height="300"
-                     style={{ border: 0 }}
-                     allowFullScreen=""
-                     loading="lazy"
-                     referrerPolicy="no-referrer-when-downgrade"
-                     title={`Lokalizacja ${product.name}`}
-                 ></iframe>
-             </div>
-            )}
 
-            {/* --- RESTORED: Admin Edit/Delete Forms --- */}
+            {/* --- Admin Edit/Delete Forms --- */}
             {isEditable && (
                 <>
-                    <hr />
+                    <hr/>
                     <UpdateProductForm
                         product={product}
-                        onUpdate={(msg) => { setMessage(msg); refreshList?.(); }}
+                        onUpdate={(msg) => {
+                            setMessage(msg);
+                            refreshList?.();
+                        }}
                     />
-                    <hr />
+                    <hr/>
                     <button onClick={deleteProduct} style={{backgroundColor: '#b33'}}>Usuń produkt</button>
                 </>
             )}
-            <div style={{ marginTop: 10 }}>{message}</div>
+            <div style={{marginTop: 10}}>{message}</div>
         </div>
     );
 }
-
 // --- MAIN APP COMPONENT ---
 export default function App() {
     const [user, setUser] = useState(null);
@@ -275,19 +390,35 @@ export default function App() {
 
     // Cart State
     const [cart, setCart] = useState([]);
-    const [activeTab, setActiveTab] = useState("products"); // 'products' | 'cart'
+    const [activeTab, setActiveTab] = useState("products");
 
     // 1. REHYDRATION (Check Cookie)
     useEffect(() => {
         const checkLoginStatus = async () => {
             try {
                 const res = await fetch(`${BASE}/auth/me`, { method: "GET", credentials: "include" });
+
+                if (res.status === 401 || res.status === 403) {
+                    console.log("Status logowania: Użytkownik gość (401/403).");
+                    setUser(null);
+                    return;
+                }
+                // --------------------------------------------------------
+
                 if (res.ok) {
                     const userData = await res.json();
                     setUser(userData);
+                } else {
+                    console.error("Błąd uwierzytelnienia (inny niż 401/403):", res.status);
+                    setUser(null);
                 }
-            } catch (err) { console.log("Guest User"); }
-            finally { setIsLoadingUser(false); }
+            } catch (err) {
+                console.log("Błąd połączenia sieciowego lub serwera.");
+                setUser(null);
+            }
+            finally {
+                setIsLoadingUser(false);
+            }
         };
         checkLoginStatus();
     }, []);
@@ -341,27 +472,6 @@ export default function App() {
 
     if (isLoadingUser) return <div>Ładowanie...</div>;
 
-    if (currentView === 'login') {
-        return (
-            <div style={{textAlign: 'center', marginTop: 50}}>
-                <Login
-                    onSwitchToRegister={() => setCurrentView('register')}
-                    onLoginSuccess={handleLoginSuccess}
-                    onCancel={() => setCurrentView('store')}
-                />
-            </div>
-        );
-    }
-
-    if (currentView === 'register') {
-        return (
-            <div style={{textAlign: 'center', marginTop: 50}}>
-                <Register onSwitchToLogin={() => setCurrentView('login')} />
-                <button onClick={() => setCurrentView('store')} style={{marginTop: 20}}>Anuluj</button>
-            </div>
-        );
-    }
-
     // 3. MAIN STORE VIEW
     return (
         <div style={{ padding: 20, fontFamily: 'sans-serif', textAlign: 'center' }}>
@@ -369,7 +479,6 @@ export default function App() {
             {/* HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #444', paddingBottom: 10, marginBottom: 20 }}>
                 <h1>☕ KawUZ</h1>
-
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {user ? (
                         <>
@@ -414,7 +523,7 @@ export default function App() {
 
                     {/* CONTENT */}
                     {activeTab === "products" && !selectedId && (
-                        <ProductsList key={refreshKey} onSelect={(id) => { setSelectedId(id); setMode('details'); }} onAddToCart={(p) => setCart(prev => [...prev, p])} />
+                        <ProductsList key={refreshKey} onSelect={(id) => { setSelectedId(id); setMode('details'); setIsEditing(false); }} onAddToCart={(p) => setCart(prev => [...prev, p])} />
                     )}
 
                     {activeTab === "products" && selectedId && (
@@ -435,6 +544,15 @@ export default function App() {
                         />
                     )}
                 </>
+            )}
+            {currentView === 'login' && (
+                <Login
+                    onSwitchToRegister={() => setCurrentView('register')}
+                    onLoginSuccess={handleLoginSuccess}
+                    onCancel={() => setCurrentView('store')}
+                    isModal={true}
+                    onClose={() => setCurrentView('store')}
+                />
             )}
         </div>
     );
