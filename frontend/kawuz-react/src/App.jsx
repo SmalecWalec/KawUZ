@@ -139,24 +139,95 @@ function ProductsList({ onSelect, onAddToCart }) {
 
     useEffect(() => { fetchProducts(); }, []);
 
-    if (loading) return <div>Loading products…</div>;
-    if (err) return <div style={{ color: "red" }}>Error: {err}</div>;
+    if (loading) return <div>Ładowanie produktów…</div>;
+    if (err) return <div style={{ color: "red" }}>Błąd: {err}</div>;
+
+    const mockImageUrl = "https://via.placeholder.com/80x80?text=Kawa";
 
     return (
         <div>
             <h2>Lista Ofert (Kawa)</h2>
             <div style={{ marginBottom: 10 }}>
-                <input type="text" placeholder="Szukaj..." value={search} onChange={e => setSearch(e.target.value)} style={{ marginRight: 8, padding: 5 }} />
+                <input
+                    type="text"
+                    placeholder="Szukaj..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    style={{ marginRight: 8, padding: 5 }}
+                />
                 <button onClick={() => fetchProducts(search)}>Szukaj</button>
             </div>
-            <ul style={{textAlign: 'left'}}>
+            <ul style={{ listStyle: 'none', padding: 0 }}>
                 {products.map(p => (
-                    <li key={p.id} style={{marginBottom: 5, display: 'flex', alignItems: 'center'}}>
-                        <button onClick={() => onSelect(p.id)} style={{ marginRight: 8 }}>Podgląd</button>
-                        {p.name} — <b>{p.price} zł</b>
-                        <button onClick={() => onAddToCart(p)} style={{ marginLeft: 10, padding: "2px 5px", backgroundColor: "#4a4", color: "white" }}>
-                            Dodaj do koszyka
-                        </button>
+                    <li
+                        key={p.id}
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 15,
+                            border: '1px solid #ddd',
+                            padding: 10,
+                            borderRadius: 5,
+                            textAlign: 'left'
+                        }}
+                    >
+
+                        {/* 1. Zdjęcie - Lewa strona */}
+                        <div style={{ marginRight: 15, flexShrink: 0 }}>
+                            <img
+                                src={p.imageUrl || mockImageUrl}
+                                alt={p.name}
+                                style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 3 }}
+                            />
+                        </div>
+
+                        {/* 2. Nazwa i Opis - Środek, na lewo */}
+                        <div style={{ flexGrow: 1, minWidth: 0 }}>
+                            <h3
+                                onClick={() => onSelect(p.id)} // Dodano możliwość podglądu przez kliknięcie nazwy
+                                style={{
+                                    margin: '0 0 5px 0',
+                                    fontSize: '1.2em',
+                                    cursor: 'pointer',
+                                    color: '#007bff'
+                                }}
+                            >
+                                {p.name}
+                            </h3>
+                            <p style={{ margin: 0, color: '#666', fontSize: '0.9em', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                {p.description || "Brak opisu produktu."}
+                            </p>
+                        </div>
+
+                        {/* 3. Cena i Przycisk "Dodaj do koszyka" - Prawa strona */}
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-end',
+                            marginLeft: 15,
+                            flexShrink: 0 // Zapobiega kurczeniu się tego bloku
+                        }}>
+                            <b style={{ fontSize: '1.4em', color: '#333', marginBottom: 5 }}>
+                                {p.price} zł
+                            </b>
+                            <button
+                                onClick={() => onAddToCart(p)}
+                                style={{
+                                    padding: "8px 15px",
+                                    backgroundColor: "#28a745", // Zielony kolor
+                                    color: "white",
+                                    border: 'none',
+                                    borderRadius: 3,
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Dodaj do koszyka
+                            </button>
+                            {/* Stary przycisk podglądu można usunąć, lub przenieść np. tu */}
+                            {/* <button onClick={() => onSelect(p.id)} style={{ marginTop: 5, padding: "5px 10px" }}>Podgląd</button> */}
+                        </div>
+
                     </li>
                 ))}
             </ul>
