@@ -39,4 +39,8 @@ public class ProductService {
         return productRepository.findByNameContainingIgnoreCase(keyword);
     }
 
+    public List<Product> getTop10Products() {
+        return productRepository.findTop10ByOrderBySalesDesc();
+    }
+
 }

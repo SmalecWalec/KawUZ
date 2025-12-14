@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8080/api/product';
+const API_URL = 'http://localhost:8081/api/product';
 
 function ProductForm({ initialProduct = {}, onProductSaved }) {
     const [productData, setProductData] = useState({

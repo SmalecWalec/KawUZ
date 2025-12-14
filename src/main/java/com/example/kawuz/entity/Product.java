@@ -16,6 +16,7 @@ public class Product {
     private int stockQuantity;
     private double price;
     private String map;
+    private int sales = 0;
 
 
     public int getId() {
@@ -70,5 +71,11 @@ public class Product {
     }
     public void setMap(String map) {
         this.map = map;
+    }
+    public int getSales() { 
+        return sales; 
+    }
+    public void setSales(int sales) { 
+        this.sales = sales; 
     }
 }

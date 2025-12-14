@@ -23,18 +23,22 @@ public class OrderController {
     public ResponseEntity<String> placeOrder(@RequestBody List<OrderItem> items) {
         for (OrderItem item : items) {
             Product product = productService.getProductById(item.getProductId());
+
             if (product == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Nie znaleziono produktu: " + item.getProductId());
             }
+
             if (product.getStockQuantity() < item.getQuantity()) {
                 return ResponseEntity.badRequest()
                         .body("Nie ma wystarczającej liczby produktu: " + product.getName());
             }
-            
+
             product.setStockQuantity(product.getStockQuantity() - item.getQuantity());
+            product.setSales(product.getSales() + item.getQuantity());
             productService.updateProduct(product, product.getId());
         }
+
         return ResponseEntity.ok("Zamówienie zostało złożone!");
     }
 

@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import AdminPanel from './AdminPanel';
 import Register from "./Register";
 import Cart from "./Cart";
+import Top10Products from "./Top10Products";
 
 const BASE = "http://localhost:8080/api";
 
@@ -407,6 +408,9 @@ export default function App() {
                         <button onClick={() => { setActiveTab("products"); setSelectedId(null); setMode('list'); }} style={{ fontWeight: activeTab === "products" ? 'bold' : 'normal' }}>
                             Produkty
                         </button>
+                        <button onClick={() => { setActiveTab("top10"); setSelectedId(null); setMode('list'); }} style={{ fontWeight: activeTab === "top10" ? 'bold' : 'normal', marginLeft: 10 }}>
+                            Top 10 produktów
+                        </button>
                         <button onClick={() => { setActiveTab("cart"); setSelectedId(null); setMode('list'); }} style={{ fontWeight: activeTab === "cart" ? 'bold' : 'normal', marginLeft: 10 }}>
                             Koszyk ({cart.length})
                         </button>
@@ -417,7 +421,14 @@ export default function App() {
                         <ProductsList key={refreshKey} onSelect={(id) => { setSelectedId(id); setMode('details'); }} onAddToCart={(p) => setCart(prev => [...prev, p])} />
                     )}
 
-                    {activeTab === "products" && selectedId && (
+                    {activeTab === "top10" && !selectedId && (
+                        <Top10Products 
+                            onSelect={(id) => { setSelectedId(id); setMode('details'); }} 
+                            onAddToCart={(p) => setCart(prev => [...prev, p])} 
+                        />
+                    )}
+
+                    {selectedId && mode === 'details' && (
                         <ProductDetails
                             id={selectedId}
                             onBack={() => { setSelectedId(null); setMode('list'); }}

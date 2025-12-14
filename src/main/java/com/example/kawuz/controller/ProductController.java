@@ -71,5 +71,10 @@ public class ProductController {
         Product savedProduct = productService.addProduct(product);
         return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
     }
+
+    @GetMapping("/products/top10")
+        public ResponseEntity<List<Product>> getTop10Products() {
+        return ResponseEntity.ok(productService.getTop10Products());
+    }
 }
 
