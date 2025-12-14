@@ -1,0 +1,112 @@
+.modal-overlay {
+    /* Blokuje całe okno przeglądarki */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    /* Efekt wizualny */
+    background-color: rgba(0, 0, 0, 0.2); /* Półprzezroczyste, ciemne tło */
+    backdrop-filter: blur(5px); /* WAŻNE: efekt zamazania całej strony za modalem */
+
+    /* Pozycja wertykalna */
+    display: flex;
+    justify-content: center; /* Centrowanie poziome */
+    align-items: center; /* Centrowanie pionowe */
+
+    /* Zapewnienie, że jest na wierzchu */
+    z-index: 1000;
+}
+
+/* 2. STYLE DLA OKIENKA (MODALU) */
+/* Użyjemy klasy .login, ale musimy zmodyfikować jej położenie,
+   żeby nie było kontrolowane przez margin: auto */
+
+.login {
+    /* Nadpisujemy lub modyfikujemy style: */
+    max-width: 380px;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Mocniejszy cień dla efektu uniesienia */
+    /* Ważne: usuń lub nadpisz poprzednie ustawienie margin: 40px auto; */
+    margin: 0;
+    /* Dodaj animację wjazdu (opcjonalnie) */
+    transform: scale(1);
+    opacity: 1;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.login h3 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* --- INPUTY --- */
+
+.login input {
+    width: 95%; /* Prawie pełna szerokość */
+    padding: 10px;
+    margin-bottom: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+
+.login input:focus {
+    border-color: #5b9bd5; /* Proste podświetlenie */
+    outline: none;
+}
+
+.login br {
+    display: none;
+}
+
+/* --- PRZYCISKI --- */
+
+.login button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: bold;
+    margin: 5px; /* Odstęp między przyciskami */
+    transition: background-color 0.2s;
+}
+
+/* Przycisk Główny */
+.login button[type="submit"] {
+    background-color: #007bff;
+    color: white;
+}
+
+.login button[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+/* Przycisk Anuluj (lub inny domyślny) */
+.login button[type="button"]:nth-of-type(1) {
+    background-color: #6c757d;
+    color: white;
+}
+
+.login button[type="button"]:nth-of-type(1):hover {
+    background-color: #5a6268;
+}
+
+/* Przycisk 'Nie mam konta' (Link) */
+.login button:last-child {
+    background: none;
+    border: none;
+    color: #007bff;
+    text-decoration: underline;
+    margin-top: 10px;
+}
+
+.login button:last-child:hover {
+    color: #0056b3;
+    text-decoration: none;
+}
