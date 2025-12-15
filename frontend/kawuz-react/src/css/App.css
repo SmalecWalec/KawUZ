@@ -1,0 +1,52 @@
+.product-card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.products-container {
+    max-width: 70vw;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.productElement:hover {
+    box-shadow:
+      12px 12px 12px rgba(0, 0, 0, 0.1),
+      -10px -10px 10px white
+}
+.productElement > div:last-child button:hover {
+  box-shadow:
+      inset 6px 6px 6px rgba(0, 0, 0, 0.1),
+      inset -5px -5px 5px green !important;
+        transition: all 0.3s ease;
+}
+
+.search-input {
+    width: 35%;
+    max-width: 400px;
+    padding: 12px 15px 12px 40px;
+    margin: 10px 0;
+    font-size: 16px;
+    color: #333;
+    background-color: #f7f7f7;
+    border: 1px solid #ccc;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+.search-input:hover {
+  border-color: #999;
+}
+.search-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+  background-color: #fff;
+  outline: none;
+}
+.search-input::placeholder {
+  color: #999;
+  font-style: italic;
+}
+

@@ -87,7 +87,6 @@
     background-color: #0056b3;
 }
 
-/* Przycisk Anuluj (lub inny domyślny) */
 .login button[type="button"]:nth-of-type(1) {
     background-color: #6c757d;
     color: white;

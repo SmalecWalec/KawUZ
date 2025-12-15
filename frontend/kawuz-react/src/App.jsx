@@ -4,7 +4,7 @@ import AdminPanel from './AdminPanel';
 import Register from "./Register";
 import Cart from "./Cart";
 import Login from './Login';
-import "./App.css"
+import "./css/App.css"
 
 const BASE = "http://localhost:8080/api";
 
@@ -123,7 +123,7 @@ function ProductsList({ onSelect, onAddToCart }) {
                     placeholder="Szukaj..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    style={{ marginRight: 8, padding: 5 }}
+                    className="search-input"
                 />
             </div>
             <ul style={{ listStyle: 'none', padding: 0, width: "100%" }}>
@@ -137,10 +137,14 @@ function ProductsList({ onSelect, onAddToCart }) {
                             marginBottom: 15,
                             border: '1px solid #ddd',
                             padding: 10,
-                            borderRadius: 5,
+                            borderRadius: 10,
                             textAlign: 'left',
-                            width: "100%"
+                            width: "100%",
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
                         }}
+                        className="productElement"
+                        onClick={() => onSelect(p.id)}
                     >
 
                         {/* 1. Zdjęcie - Lewa strona (Użycie getProductImage) */}
@@ -155,11 +159,9 @@ function ProductsList({ onSelect, onAddToCart }) {
                         {/* 2. Nazwa i Opis - Środek, na lewo */}
                         <div style={{ flexGrow: 1, minWidth: 0 }}>
                             <h3
-                                onClick={() => onSelect(p.id)}
                                 style={{
                                     margin: '0 0 5px 0',
                                     fontSize: '1.2em',
-                                    cursor: 'pointer',
                                     color: '#007bff'
                                 }}
                             >
@@ -171,31 +173,42 @@ function ProductsList({ onSelect, onAddToCart }) {
                         </div>
 
                         {/* 3. Cena i Przycisk "Dodaj do koszyka" - Prawa strona */}
-                        <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-end',
-                            marginLeft: 15,
-                            flexShrink: 0
-                        }}>
-                            <b style={{ fontSize: '1.4em', color: '#333', marginBottom: 5 }}>
-                                {p.price} zł
-                            </b>
-                            <button
-                                onClick={() => onAddToCart(p)}
-                                style={{
-                                    padding: "8px 15px",
-                                    backgroundColor: "#28a745",
-                                    color: "white",
-                                    border: 'none',
-                                    borderRadius: 3,
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Dodaj do koszyka
-                            </button>
-                        </div>
-
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'flex-end',
+                                marginLeft: 15,
+                                flexShrink: 0
+                            }}>
+                                {p.stockQuantity>=1 &&(
+                                <h5>TOWAR DOSTĘPNY NA MAGAZYNIE</h5>
+                                )}
+                                {p.stockQuantity<=0 &&(
+                                <h5>TOWAR NIEDOSTEPNY</h5>
+                                )}
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'row',
+                            }}>
+                                <b style={{ fontSize: '1.5em', color: '#333', marginRight:5}}>
+                                    {p.price} zł
+                                </b>
+                                <p style={{ fontSize: '0.75em'}}>brutto</p>
+                               </div>
+                                <button
+                                    onClick={() => onAddToCart(p)}
+                                    style={{
+                                        padding: "8px 15px",
+                                        backgroundColor: "#28a745",
+                                        color: "white",
+                                        border: 'none',
+                                        borderRadius: 3,
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Dodaj do koszyka
+                                </button>
+                            </div>
                     </li>
                 ))}
             </ul>
@@ -255,17 +268,15 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
             <div
                 style={{
                     display: 'flex',
-                    gap: '15px', // Odstęp między kolumnami
-                    alignItems: 'center', // Wyrównanie do góry
+                    gap: '15px',
+                    alignItems: 'center',
                     textAlign: 'left',
                     marginBottom: 20,
                 }}
-                className={!isEditable ? "product-card" : ""}
+                className={"product-card"}
             >
-                {/* ======================================================= */}
                 {/* 1. KOLUMNA LEWA: Obrazek */}
-                {/* ======================================================= */}
-                <div style={{flexShrink: 0, width: "33%"}}>
+                <div style={{flexShrink: 0, width: "40%"}}>
                     <img
                         src={getProductImage(product.name)}
                         alt={product.name}
@@ -273,30 +284,33 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
                     />
                 </div>
 
-                {/* ======================================================= */}
                 {/* 2. KOLUMNA ŚRODKOWA: Nazwa i Opis */}
-                {/* ======================================================= */}
-                <div style={{flexGrow: 1, minWidth: 0, paddingTop: 10,justifyContent: 'center', justifyItems: 'center'}}>
-                    <h4 style={{margin: '0 0 10px 0', fontSize: '1.5em'}}>
-                        {product.name}
-                    </h4>
-                    <p style={{margin: '0 0 10px 0', color: '#666'}}>
-                        {product.description}
-                    </p>
-                </div>
+{/*                 <div style={{flexGrow: 1, minWidth: 0, paddingTop: 10,justifyContent: 'center', justifyItems: 'center'}}> */}
+{/*                     <h4 style={{margin: '0 0 10px 0', fontSize: '1.5em'}}> */}
+{/*                         {product.name} */}
+{/*                     </h4> */}
+{/*                     <p style={{margin: '0 0 10px 0', color: '#666'}}> */}
+{/*                         {product.description} */}
+{/*                     </p> */}
+{/*                 </div> */}
 
-                {/* ======================================================= */}
                 {/* 3. KOLUMNA PRAWA: Cena, Koszyk i Mapa */}
-                {/* ======================================================= */}
                 <div style={{
                     flexShrink: 0,
-                    width: '25%',
+                    width: '60%',
                     textAlign: 'right',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: "center"
                 }}>
+
+                    <h4 style={{margin: '0 0 10px 0', fontSize: '1.5em'}}>
+                                            {product.name}
+                                        </h4>
+                                        <p style={{margin: '0 0 10px 0', color: '#666'}}>
+                                            {product.description}
+                                        </p>
 
                     {/* CENA */}
                     <b style={{fontSize: '2em', color: '#333', marginBottom: 10, marginTop: 1}}>
@@ -327,7 +341,7 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
                             <h4 style={{margin: '5px 0'}}>Miejsce pochodzenia</h4>
                             <iframe
                                 src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyB2NIWI3Tv9iDPrlnowr_0ZqZWoAQydKJU&q=$${product.map}&maptype=roadmap`}
-                                width="100%"
+                                width="50%"
                                 height="75%"
                                 style={{border: 0, borderRadius: 5}}
                                 allowFullScreen="true"
@@ -376,7 +390,7 @@ export default function App() {
 
     // Cart State
     const [cart, setCart] = useState([]);
-    const [activeTab, setActiveTab] = useState("products"); // 'products' | 'cart'
+    const [activeTab, setActiveTab] = useState("products");
 
     // 1. REHYDRATION (Check Cookie)
     useEffect(() => {
