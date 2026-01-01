@@ -1,111 +1,111 @@
+:root {
+    --bg: #f4f7f9;
+    --text: #333;
+    --heading: #1a202c;
+    --border: #e2e8f0;
+
+    --btn-bg: #4a5568;
+    --btn-hover: #2d3748;
+
+    --primary: #3182ce;
+    --primary-hover: #2c5282;
+
+    --danger: #e53e3e;
+    --danger-hover: #c53030;
+
+    --card-bg: #ffffff;
+    --border-search: #333;
+}
+
+.dark {
+    --bg: #121212;
+    --text: #e5e7eb;
+    --heading: #f1f5f9;
+    --border: #2d3748;
+
+    --btn-bg: #374151;
+    --btn-hover: #4b5563;
+
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+
+    --card-bg: #1f2933;
+    --border-search: #e5e7eb;
+}
+
 .modal-overlay {
-    /* Blokuje całe okno przeglądarki */
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-
-    /* Efekt wizualny */
-    background-color: rgba(0, 0, 0, 0.2); /* Półprzezroczyste, ciemne tło */
-    backdrop-filter: blur(5px); /* WAŻNE: efekt zamazania całej strony za modalem */
-
-    /* Pozycja wertykalna */
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(5px);
     display: flex;
-    justify-content: center; /* Centrowanie poziome */
-    align-items: center; /* Centrowanie pionowe */
-
-    /* Zapewnienie, że jest na wierzchu */
+    justify-content: center;
+    align-items: center;
     z-index: 1000;
 }
 
-/* 2. STYLE DLA OKIENKA (MODALU) */
-/* Użyjemy klasy .login, ale musimy zmodyfikować jej położenie,
-   żeby nie było kontrolowane przez margin: auto */
-
 .login {
-    /* Nadpisujemy lub modyfikujemy style: */
     max-width: 380px;
     padding: 30px;
-    background-color: #ffffff;
+    background-color: var(--card-bg);
     border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Mocniejszy cień dla efektu uniesienia */
-    /* Ważne: usuń lub nadpisz poprzednie ustawienie margin: 40px auto; */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     margin: 0;
-    /* Dodaj animację wjazdu (opcjonalnie) */
     transform: scale(1);
     opacity: 1;
     transition: transform 0.3s ease-out, opacity 0.3s ease-out;
 }
 
 .login h3 {
-    color: #333;
+    color: var(--text);
     margin-bottom: 20px;
 }
 
-/* --- INPUTY --- */
-
 .login input {
-    width: 95%; /* Prawie pełna szerokość */
+    width: 95%;
     padding: 10px;
     margin-bottom: 12px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-search);
     border-radius: 4px;
     box-sizing: border-box;
     font-size: 1em;
 }
 
 .login input:focus {
-    border-color: #5b9bd5; /* Proste podświetlenie */
+    border-color: var(--primary);
     outline: none;
 }
 
-.login br {
-    display: none;
-}
-
-/* --- PRZYCISKI --- */
-
-.login button {
-    padding: 8px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-    font-weight: bold;
-    margin: 5px; /* Odstęp między przyciskami */
-    transition: background-color 0.2s;
-}
-
-/* Przycisk Główny */
 .login button[type="submit"] {
-    background-color: #007bff;
+    background-color: var(--primary);
     color: white;
 }
 
 .login button[type="submit"]:hover {
-    background-color: #0056b3;
+    background-color: var(--primary-hover);
 }
 
 .login button[type="button"]:nth-of-type(1) {
-    background-color: #6c757d;
+    background-color: var(--btn-bg);
     color: white;
 }
 
 .login button[type="button"]:nth-of-type(1):hover {
-    background-color: #5a6268;
+    background-color: var(--btn-hover);
 }
 
-/* Przycisk 'Nie mam konta' (Link) */
 .login button:last-child {
     background: none;
     border: none;
-    color: #007bff;
+    color: var(--primary);
     text-decoration: underline;
     margin-top: 10px;
 }
 
 .login button:last-child:hover {
-    color: #0056b3;
+    color: var(--primary-hover);
     text-decoration: none;
 }

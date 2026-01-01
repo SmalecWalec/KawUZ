@@ -1,19 +1,85 @@
+:root {
+    --bg: #f4f7f9;
+    --text: #333;
+    --heading: #1a202c;
+    --border: #e2e8f0;
+
+    --btn-bg: #4a5568;
+    --btn-hover: #2d3748;
+
+    --primary: #3182ce;
+    --primary-hover: #2c5282;
+
+    --danger: #e53e3e;
+    --danger-hover: #c53030;
+
+    --card-bg: #ffffff;
+    --table-head: #4a5568;
+    --table-hover: #edf2f7;
+
+    --border-search: #333;
+
+    --border-product: #ddd;
+
+    --color-name: #007bff;
+    --color-description: #666;
+
+    --shadow-soft: 0 4px 8px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 8px 16px rgba(0, 0, 0, 0.12);
+    --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.dark {
+    --bg: #121212;
+    --text: #e5e7eb;
+    --heading: #f1f5f9;
+    --border: #2d3748;
+
+    --btn-bg: #374151;
+    --btn-hover: #4b5563;
+
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+
+    --card-bg: #434c56;
+    --table-head: #1f2933;
+    --table-hover: #2a3441;
+
+    --border-search: #e5e7eb;
+
+    --border-product: #333;
+
+    --color-name: #4f46e5;
+    --color-description: #e8e3e3;
+
+    --shadow-soft: 0 4px 10px rgba(0, 0, 0, 0.45);
+    --shadow-hover: 0 8px 18px rgba(0, 0, 0, 0.6);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f4f7f9;
-    color: #333;
+    background-color: var(--bg);
+    color: var(--text);
     line-height: 1.6;
 }
 
 h1, h2, h3, h4 {
-    color: #1a202c;
-    border-bottom: 2px solid #e2e8f0;
+    color: var(--heading);
+    border-bottom: 2px solid var(--border);
     padding-bottom: 10px;
     margin-top: 20px;
 }
 
+h5 {
+    color: var(--text);
+}
+
 button {
-    background-color: #4a5568;
+    background-color:var(--btn-bg);
     color: white;
     border: none;
     padding: 10px 15px;
@@ -24,23 +90,23 @@ button {
 }
 
 button:hover {
-    background-color: #2d3748;
+    background-color: var(--btn-hover);
 }
 
 button[type="submit"] {
-    background-color: #3182ce;
+    background-color: var(--primary);
 }
 
 button[type="submit"]:hover {
-    background-color: #2c5282;
+    background-color: var(--primary-hover);
 }
 
 .delete-btn {
-    background-color: #e53e3e;
+    background-color: var(--danger);
 }
 
 .delete-btn:hover {
-    background-color: #c53030;
+    background-color: var(--danger-hover);
 }
 
 form div {
@@ -58,9 +124,11 @@ form input[type="number"],
 form textarea {
     width: 100%;
     padding: 10px;
-    border: 1px solid #cbd5e0;
+    border: 1px solid var(--border-search);
     border-radius: 5px;
     box-sizing: border-box;
+    background-color: var(--bg);
+    color: var(--text);
 }
 
 form textarea {
@@ -71,7 +139,7 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-    background-color: white;
+    background-color: var(--card-bg);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     overflow: hidden;
@@ -80,11 +148,11 @@ table {
 th, td {
     padding: 12px 15px;
     text-align: left;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border);
 }
 
 th {
-    background-color: #4a5568;
+    background-color: var(--table-head);
     color: white;
     font-weight: 600;
     text-transform: uppercase;
@@ -92,7 +160,7 @@ th {
 }
 
 tr:hover {
-    background-color: #edf2f7;
+    background-color: var(--table-hover);
 }
 
 .admin-button {
@@ -103,3 +171,4 @@ tr:hover {
 .admin-button:hover {
     background-color: #6b46c1 !important;
 }
+
