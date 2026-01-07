@@ -1,0 +1,119 @@
+/* Kontener główny szczegółów */
+.product-details-container {
+    border: 1px solid var(--border);
+    padding: 20px;
+    border-radius: 8px;
+    width: 100%;
+    background-color: var(--bg);
+    box-sizing: border-box;
+}
+
+.product-details-title {
+    color: var(--heading);
+}
+
+/* Karta produktu - layout flex */
+.product-card-flex {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.product-image-wrapper {
+    flex-shrink: 0;
+    width: 40%;
+}
+
+.product-image-wrapper img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.product-info-wrapper {
+    flex-shrink: 0;
+    width: 60%;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.product-info-name {
+    margin: 0 0 10px 0;
+    font-size: 1.5em;
+    color: var(--heading);
+}
+
+.product-info-desc {
+    margin: 0 0 10px 0;
+    color: var(--color-description);
+}
+
+.product-info-price {
+    font-size: 2em;
+    color: var(--text);
+    margin-bottom: 10px;
+    margin-top: 1px;
+}
+
+/* Przyciski */
+.btn-primary {
+    background-color: var(--btn-bg);
+    color: var(--text);
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 15px;
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Formularz edycji */
+.update-product-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 300px;
+    margin: auto;
+}
+
+/* Sekcja mapy */
+.map-section {
+    margin-top: 10px;
+    text-align: center;
+    width: 100%;
+}
+
+.map-iframe {
+    border: 0;
+    border-radius: 5px;
+}
+
+/* Komunikaty i pomocnicze */
+.status-message {
+    margin-top: 10px;
+    color: var(--text);
+}
+
+.error-message {
+    color: var(--danger);
+}
+
+.separator {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 15px 0;
+}
