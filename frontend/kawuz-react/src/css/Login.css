@@ -47,7 +47,7 @@
     z-index: 1000;
 }
 
-.login {
+.auth-card{
     max-width: 380px;
     padding: 30px;
     background-color: var(--card-bg);
@@ -59,12 +59,12 @@
     transition: transform 0.3s ease-out, opacity 0.3s ease-out;
 }
 
-.login h3 {
+.auth-card h3{
     color: var(--text);
     margin-bottom: 20px;
 }
 
-.login input {
+.auth-card input{
     width: 95%;
     padding: 10px;
     margin-bottom: 12px;
@@ -74,30 +74,30 @@
     font-size: 1em;
 }
 
-.login input:focus {
+.auth-card input:focus {
     border-color: var(--primary);
     outline: none;
 }
 
-.login button[type="submit"] {
+.auth-card button[type="submit"] {
     background-color: var(--primary);
     color: white;
 }
 
-.login button[type="submit"]:hover {
+.auth-card button[type="submit"]:hover {
     background-color: var(--primary-hover);
 }
 
-.login button[type="button"]:nth-of-type(1) {
+.auth-card button[type="button"]:nth-of-type(1) {
     background-color: var(--btn-bg);
     color: white;
 }
 
-.login button[type="button"]:nth-of-type(1):hover {
+.auth-card button[type="button"]:nth-of-type(1):hover {
     background-color: var(--btn-hover);
 }
 
-.login button:last-child {
+.auth-card button:last-child {
     background: none;
     border: none;
     color: var(--primary);
@@ -105,7 +105,7 @@
     margin-top: 10px;
 }
 
-.login button:last-child:hover {
+.auth-card button:last-child:hover {
     color: var(--primary-hover);
     text-decoration: none;
 }

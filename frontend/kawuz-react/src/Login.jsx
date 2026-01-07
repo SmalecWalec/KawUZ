@@ -74,7 +74,7 @@ export default function Login({ onSwitchToRegister, onLoginSuccess, onCancel, is
 // Komponent wewnętrzny dla czystości kodu, zawierający sam formularz (BEZ ZMIAN)
 function LoginFormContent({ handleSubmit, setFormData, formData, onCancel, msg, onSwitchToRegister }) {
     return (
-        <form onSubmit={handleSubmit} className="login">
+        <form onSubmit={handleSubmit} className="auth-card">
             <h3>Logowanie</h3>
             {/* ... (inputy i przyciski bez zmian) ... */}
             <input

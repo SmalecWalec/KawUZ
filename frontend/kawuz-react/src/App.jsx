@@ -6,6 +6,7 @@ import ProductsList from "./ProductsList";
 import AdminPanel from './AdminPanel';
 import Cart from "./Cart";
 import Login from './Login';
+import Register from './Register';
 import "./css/App.css"
 
 const BASE = "http://localhost:8080/api";
@@ -154,6 +155,15 @@ export default function App() {
                                     onCancel={() => navigate('/')}
                                     isModal={true}
                                     onClose={() => navigate('/')}
+                                    onSwitchToRegister={() => navigate('/register')}
+                                />
+                            } />
+                            <Route path="/register" element={
+                                <Register
+                                    onSwitchToLogin={() => navigate('/login')}
+                                    onCancel={() => navigate('/')}
+                                    onClose={() => navigate('/')}
+                                    isModal={true}
                                 />
                             } />
                         </Routes>

@@ -20,6 +20,15 @@ public class AuthController {
     @Autowired private UserRepository userRepository;
     @Autowired private JwtUtil jwtUtil; // Inject the utility
 
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody User user) {
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Login zajęty!"));
+        }
+        userRepository.save(user);
+        return ResponseEntity.ok(Map.of("message", "Rejestracja udana!"));
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody User user) {
         Optional<User> existingUser = userRepository.findByUsername(user.getUsername());
