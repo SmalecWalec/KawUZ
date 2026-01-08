@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import {Routes, Route, useNavigate, Navigate, useSearchParams} from "react-router-dom";
 import { slugify } from "./helpers.js"
 import ProductDetailsWrapper from './ProductDetails';
 import ProductsList from "./ProductsList";
@@ -15,6 +15,8 @@ export default function App() {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [isLoadingUser, setIsLoadingUser] = useState(true);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeModal = searchParams.get("modal");
 
     const [refreshKey, setRefreshKey] = useState(0);
     const [mode, setMode] = useState('list');
@@ -54,7 +56,7 @@ export default function App() {
 
     const handleCheckout = async () => {
         if (cart.length === 0) return alert("Koszyk jest pusty");
-        if (!user) { alert("Musisz się zalogować, aby złożyć zamówienie."); setCurrentView('login'); return; }
+        if (!user) { alert("Musisz się zalogować, aby złożyć zamówienie."); setActiveModal('login'); return; }
 
         try {
             const orderItems = cart.map(item => ({ productId: item.id, quantity: 1 }));
@@ -65,7 +67,7 @@ export default function App() {
                 body: JSON.stringify(orderItems),
             });
 
-            if(res.ok) { alert("Zamówienie złożone!"); setCart([]); setRefreshKey(k => k+1); setActiveTab("products"); }
+            if(res.ok) { alert("Zamówienie złożone!"); setCart([]); setRefreshKey(k => k+1); navigate('cart'); }
             else alert("Błąd zamówienia");
         } catch(err) { alert("Błąd: " + err.message); }
     };
@@ -73,6 +75,14 @@ export default function App() {
     const handleLogout = async () => { await fetch(`${BASE}/auth/logout`, { method: "POST", credentials: "include" }); setUser(null); setCart([]); setMode('list'); setActiveTab('products'); };
 
     if (isLoadingUser) return <div style={{color: 'var(--text)'}}>Ładowanie...</div>;
+
+    const setActiveModal = (type) => {
+        if (type) {
+            setSearchParams({ modal: type }); // Ustawia ?modal=login
+        } else {
+            setSearchParams({}); // Usuwa parametry, co zamknie modal
+        }
+    };
 
     return (
         <div className={theme} style={{ padding: 20, fontFamily: 'sans-serif', textAlign: 'center' }}>
@@ -90,7 +100,7 @@ export default function App() {
                             <button onClick={handleLogout}>Wyloguj</button>
                         </>
                     ) : (
-                        <button onClick={() => navigate('/login')} style={{fontWeight: 'bold', backgroundColor: 'var(--btn-bg)', color: 'var(--text)'}}>
+                        <button onClick={() => setActiveModal('login')} style={{fontWeight: 'bold', backgroundColor: 'var(--btn-bg)', color: 'var(--text)'}}>
                             Zaloguj się
                         </button>
                     )}
@@ -105,11 +115,9 @@ export default function App() {
 
             {/* --- TREŚĆ ZMIENNA (ROUTES) --- */}
             <Routes>
-                {/* WIDOK ADMINA */}
                 <Route path="/admin" element={
                     user?.isAdmin ? (
                         <div>
-                            <button onClick={() => navigate('/')} style={{marginBottom: 10}}>Powrót do sklepu</button>
                             <AdminPanel
                                 forceRefresh={() => setRefreshKey(k => k + 1)}
                                 onEdit={(id) => navigate(`/product/${id}?edit=true`)}
@@ -120,56 +128,44 @@ export default function App() {
                         <Navigate to="/" replace />
                     )
                 } />
+                <Route path="/" element={<ProductsList
+                    key={refreshKey}
+                    onSelect={(p) => navigate(`/product/${p.id}-${slugify(p.name)}`)}
+                    onAddToCart={(p) => setCart(prev => [...prev, p])}
+                />} />
 
-                {/* WIDOKI SKLEPU (Produkty, Koszyk, Szczegóły) */}
-                <Route path="*" element={
-                    <>
-                        <Routes>
-                            <Route path="/" element={
-                                <ProductsList
-                                    key={refreshKey}
-                                    onSelect={(p) => navigate(`/product/${p.id}-${slugify(p.name)}`)}
-                                    onAddToCart={(p) => setCart(prev => [...prev, p])}
-                                />
-                            } />
+                <Route path="/cart" element={<Cart
+                    cart={cart}
+                    onRemove={(idx) => setCart(prev => prev.filter((_, i) => i !== idx))}
+                    onCheckout={handleCheckout}
+                />} />
 
-                            <Route path="/cart" element={
-                                <Cart
-                                    cart={cart}
-                                    onRemove={(idx) => setCart(prev => prev.filter((_, i) => i !== idx))}
-                                    onCheckout={handleCheckout}
-                                />
-                            } />
-
-                            <Route path="/product/:id" element={
-                                <ProductDetailsWrapper
-                                    user={user}
-                                    onAddToCart={(p) => setCart(prev => [...prev, p])}
-                                    refreshList={() => setRefreshKey(k => k+1)}
-                                />
-                            } />
-
-                            <Route path="/login" element={
-                                <Login
-                                    onLoginSuccess={(u) => {setUser(u); navigate('/');}}
-                                    onCancel={() => navigate('/')}
-                                    isModal={true}
-                                    onClose={() => navigate('/')}
-                                    onSwitchToRegister={() => navigate('/register')}
-                                />
-                            } />
-                            <Route path="/register" element={
-                                <Register
-                                    onSwitchToLogin={() => navigate('/login')}
-                                    onCancel={() => navigate('/')}
-                                    onClose={() => navigate('/')}
-                                    isModal={true}
-                                />
-                            } />
-                        </Routes>
-                    </>
-                } />
+                <Route path="/product/:id" element={<ProductDetailsWrapper
+                    user={user}
+                    onAddToCart={(p) => setCart(prev => [...prev, p])}
+                    refreshList={() => setRefreshKey(k => k+1)}
+                />} />
             </Routes>
+
+            {/* --- WARSTWA MODALI (Renderowanie warunkowe) --- */}
+            {activeModal === 'login' && (
+                <Login
+                    onLoginSuccess={(u) => { setUser(u); setActiveModal(null); }}
+                    onCancel={() => setActiveModal(null)}
+                    isModal={true}
+                    onClose={() => setActiveModal(null)}
+                    onSwitchToRegister={() => setActiveModal('register')}
+                />
+            )}
+
+            {activeModal === 'register' && (
+                <Register
+                    onSwitchToLogin={() => setActiveModal('login')}
+                    onCancel={() => setActiveModal(null)}
+                    isModal={true}
+                    onClose={() => setActiveModal(null)}
+                />
+            )}
         </div>
     );
 }

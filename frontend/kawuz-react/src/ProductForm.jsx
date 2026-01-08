@@ -11,6 +11,8 @@ function ProductForm({ initialProduct = {}, onProductSaved }) {
         stockQuantity: initialProduct.stockQuantity || 0,
     });
 
+    const [selectedFile, setSelectedFile] = useState(null);
+
     const isEditMode = initialProduct.id != null;
 
     const handleChange = (e) => {
@@ -21,26 +23,45 @@ function ProductForm({ initialProduct = {}, onProductSaved }) {
         }));
     };
 
+    const handleFileChange = (e) => {
+        setSelectedFile(e.target.files[0]);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // TWORZENIE FORM DATA
+        const formData = new FormData();
+
+        // Dodajemy plik (jeśli został wybrany)
+        if (selectedFile) {
+            formData.append('image', selectedFile);
+        }
+
+        formData.append('name', productData.name);
+        formData.append('description', productData.description);
+        formData.append('price', productData.price);
+        formData.append('stockQuantity', productData.stockQuantity);
+
         try {
             let response;
+            const config = {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            };
+
             if (isEditMode) {
-                response = await axios.put(`${API_URL}/${initialProduct.id}`, productData);
-                console.log('Produkt zaktualizowany:', response.data);
+                response = await axios.put(`${API_URL}/${initialProduct.id}`, formData, config);
             } else {
-                response = await axios.post(API_URL, productData);
-                console.log('Produkt utworzony:', response.data);
+                response = await axios.post(API_URL, formData, config);
             }
 
-            setProductData({ name: '', description: '', price: 0, stock: 0 });
-            if (onProductSaved) {
-                onProductSaved();
-            }
+            console.log('Sukces:', response.data);
+            setProductData({ name: '', description: '', price: 0, stockQuantity: 0 });
+            setSelectedFile(null); // Reset pliku
+            if (onProductSaved) onProductSaved();
 
         } catch (error) {
-            console.error('Błąd zapisu produktu:', error);
+            console.error('Błąd zapisu:', error);
             alert('Wystąpił błąd podczas zapisywania produktu.');
         }
     };
@@ -72,7 +93,13 @@ function ProductForm({ initialProduct = {}, onProductSaved }) {
                     value={productData.stockQuantity}
                     onChange={handleChange}
                     required min="0"
-                />            </div>
+                />
+            </div>
+
+            <div style={{ margin: '10px 0' }}>
+                <label>Zdjęcie produktu:</label>
+                <input type="file" accept="image/*" onChange={handleFileChange} />
+            </div>
 
             <button type="submit">
                 {isEditMode ? 'Zapisz Zmiany' : 'Dodaj Produkt'}

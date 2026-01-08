@@ -76,7 +76,6 @@ function LoginFormContent({ handleSubmit, setFormData, formData, onCancel, msg, 
     return (
         <form onSubmit={handleSubmit} className="auth-card">
             <h3>Logowanie</h3>
-            {/* ... (inputy i przyciski bez zmian) ... */}
             <input
                 placeholder="Login"
                 onChange={e => setFormData({...formData, username: e.target.value})}
