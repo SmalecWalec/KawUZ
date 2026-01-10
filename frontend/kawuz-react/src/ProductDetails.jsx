@@ -98,6 +98,10 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
             .catch(e => setMessage(e.message));
     };
 
+    const downloadPdf = () => {
+            window.location.href = `${BASE}/product/${product.id}/pdf`;
+    };
+
     if (loading) return <div className="status-message">Ładowanie szczegółów...</div>;
     if (message && !product) return <div className="error-message">Błąd: {message}</div>;
     if (!product) return null;
@@ -116,9 +120,15 @@ function ProductDetails({ id, onBack, refreshList, isEditable = false, onAddToCa
                     <b className="product-info-price">{product.price} zł</b>
 
                     {!isEditable && (
-                        <button onClick={() => onAddToCart(product)} className="btn-primary">
-                            Dodaj do koszyka
-                        </button>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <button onClick={() => onAddToCart(product)} className="btn-primary">
+                                Dodaj do koszyka
+                            </button>
+
+                            <button onClick={downloadPdf} className="btn-primary" style={{ backgroundColor: '#dc3545', borderColor: '#dc3545' }}>
+                                Pobierz PDF
+                            </button>
+                        </div>
                     )}
 
                     {product.map && (

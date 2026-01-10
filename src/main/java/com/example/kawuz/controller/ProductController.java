@@ -5,6 +5,11 @@ import com.example.kawuz.service.ProductService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.lowagie.text.*;
+import com.lowagie.text.pdf.PdfWriter;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import com.lowagie.text.pdf.BaseFont;
 
 import java.util.List;
 
@@ -70,6 +75,47 @@ public class ProductController {
     public ResponseEntity<Product> createProduct(@RequestBody Product product) {
         Product savedProduct = productService.addProduct(product);
         return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/product/{id}/pdf")
+    public void generatePdf(@PathVariable int id, HttpServletResponse response) throws IOException {
+        Product product = productService.getProductById(id);
+
+        if (product == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Product not found");
+            return;
+        }
+
+        response.setContentType("application/pdf");
+        String headerKey = "Content-Disposition";
+        String filename = "oferta_" + product.getName().replace(" ", "_") + ".pdf";
+        response.setHeader(headerKey, "attachment; filename=" + filename);
+
+        Document document = new Document(PageSize.A4);
+        PdfWriter.getInstance(document, response.getOutputStream());
+
+        document.open();
+
+        Font fontTitle = FontFactory.getFont(FontFactory.HELVETICA_BOLD, BaseFont.CP1250, BaseFont.EMBEDDED, 20);
+        Font fontText = FontFactory.getFont(FontFactory.HELVETICA, BaseFont.CP1250, BaseFont.EMBEDDED, 12);
+
+        Paragraph title = new Paragraph("Oferta KawUZ: " + product.getName(), fontTitle);
+        title.setAlignment(Paragraph.ALIGN_CENTER);
+        document.add(title);
+
+        document.add(new Paragraph("\n"));
+
+        document.add(new Paragraph("Cena: " + product.getPrice() + " zł", fontText));
+
+        if (product.getDescription() != null) {
+            document.add(new Paragraph("\nOpis:", fontText));
+            document.add(new Paragraph(product.getDescription(), fontText));
+        }
+
+        document.add(new Paragraph("\n\n-----------------------------"));
+        document.add(new Paragraph("Wygenerowano z KawUZ", FontFactory.getFont(FontFactory.COURIER, BaseFont.CP1250, BaseFont.EMBEDDED, 10)));
+
+        document.close();
     }
 }
 
